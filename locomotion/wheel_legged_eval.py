@@ -12,7 +12,7 @@ import time
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="wheel-legged-walking")
-    parser.add_argument("--ckpt", type=int, default=9400)
+    parser.add_argument("--ckpt", type=int, default=800)
     args = parser.parse_args()
 
     gs.init(backend=gs.gpu)

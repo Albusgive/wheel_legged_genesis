@@ -109,25 +109,24 @@ def get_cfgs():
         "termination_if_pitch_greater_than": 20, #15度以内都摆烂，会导致episode太短难以学习
         "termination_if_base_height_greater_than": 0.1,
         "termination_if_knee_height_greater_than": 0.00,
-        "termination_base_height_time": 1.0,
         # base pose
         "base_init_pos": [0.0, 0.0, 0.15],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s": 30.0,
         "resampling_time_s": 4.0,
         "joint_action_scale": 0.25,
-        "wheel_action_scale": 0.25,
+        "wheel_action_scale": 10,
         "simulate_action_latency": True,
         "clip_actions": 100.0,
     }
     obs_cfg = {
         # num_obs = num_slice_obs + history_num * num_slice_obs
-        "num_obs": 78, #在rsl-rl中使用的变量为num_obs表示state数量
-        "num_slice_obs": 26,
+        "num_obs": 87, #在rsl-rl中使用的变量为num_obs表示state数量
+        "num_slice_obs": 29,
         "history_length": 2,
         "obs_scales": {
             "lin_vel": 2.0,
-            "lin_acc": 2.0,
+            # "lin_acc": 0.0,
             "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
@@ -136,34 +135,37 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "tracking_lin_sigma": 0.25, #因为-3 - 3
-        "tracking_ang_sigma": 0.25, #因为-1 - 1
-        "tracking_height_sigma": 0.001,
-        "tracking_gravity_sigma": 1.0, #因为0.2 err
-        "tracking_similar_legged_sigma": 0.5,
-        "feet_height_target": 0.0,
-        "default_base_height": 0.26,    #基础身高
+        "tracking_lin_sigma": 0.25, #跟踪上不去，尝试调小 0.25 -> 0.01
+        "tracking_ang_sigma": 0.25, #
+        # "tracking_height_sigma": 0.25,
+        # "tracking_gravity_sigma": 0.25,
+        # "tracking_similar_legged_sigma": 0.25,
+        # "feet_height_target": 0.0,
+        # "default_base_height": 0.26,    #基础身高
         "reward_scales": {
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 1.0,
-            "tracking_base_height": 1.2,
-            "lin_vel_z": -0.02,
-            "joint_action_rate": -0.005,
-            "wheel_action_rate": -0.00001,
-            "similar_to_default": 0.0,
-            "projected_gravity": -10.0,
-            "similar_legged": 0.5, 
-            "lin_acc": 0.0,
+            "tracking_lin_vel": 1.0,    #跟踪 1.0 -> 3
+            "tracking_ang_vel": 0.5,
+            "tracking_base_height": -0.5,
+            "lin_vel_z": -2.0,
+            "joint_action_rate": -0.01,
+            "wheel_action_rate": -0.01,
+            # "similar_to_default": 0.0,
+            "projected_gravity": -2.0,
+            "similar_legged": -0.2, 
+            # "lin_acc": 0.0,
             "ang_acc": -2e-8,
-            "dof_acc": -2.5e-5,
-            "knee_height": -0.6,    #相当有效，和similar_legged结合可以抑制劈岔，稳定运行
+            "dof_acc": -2.5e-7,
+            "knee_height": -0.2,    #相当有效，和similar_legged结合可以抑制劈岔，稳定运行
+            "dof_force": -1e-5,
+            "ang_xy_vel": -0.05,
+            "action_smooth": -0.01,
         },
     }
     command_cfg = {
         "num_commands": 4,
-        "lin_vel_x_range": [-3.0, 3.0],
+        "lin_vel_x_range": [-1.0, 1.0],
         "lin_vel_y_range": [-0.0, 0.0],
-        "ang_vel_range": [-0.0, 0.0],
+        "ang_vel_range": [-1.0, 1.0],
         "height_target_range": [0.22 , 0.32],
         # "height_target_range": [0.325 , 0.425],
     }
@@ -193,15 +195,15 @@ def main():
     env_cfg, obs_cfg, reward_cfg, command_cfg, class_cfg, domain_rand_cfg = get_cfgs()
     train_cfg = get_train_cfg(args.exp_name, args.max_iterations)
 
-    if os.path.exists(log_dir):
-        shutil.rmtree(log_dir)
-    os.makedirs(log_dir, exist_ok=True)
-
     env = WheelLeggedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, 
         command_cfg=command_cfg, class_cfg=class_cfg, domain_rand_cfg=domain_rand_cfg
     )
 
+    if os.path.exists(log_dir):
+        shutil.rmtree(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
+    
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")
 
     pickle.dump(

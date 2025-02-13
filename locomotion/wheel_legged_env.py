@@ -101,8 +101,8 @@ class WheelLeggedEnv:
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
 
-        self.class_value = torch.zeros(1, device=self.device, dtype=gs.tc_float)
-        self.class1 = 0.8 * (self.reward_scales["projected_gravity"] + self.reward_scales["tracking_base_height"] + self.reward_scales["similar_legged"])
+        # self.class_value = torch.zeros(1, device=self.device, dtype=gs.tc_float)
+        # self.class1 = 0.8 * (self.reward_scales["projected_gravity"] + self.reward_scales["tracking_base_height"] + self.reward_scales["similar_legged"])
 
         # initialize buffers
         self.base_lin_vel = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
@@ -149,12 +149,15 @@ class WheelLeggedEnv:
         print("self.obs_buf.size(): ",self.obs_buf.size())
 
     def _resample_commands(self, envs_idx):
-        if(self.class_value > self.class1):
-            self.commands[envs_idx, 0] = gs_rand_float(*self.command_cfg["lin_vel_x_range"], (len(envs_idx),), self.device)
-            self.commands[envs_idx, 1] = gs_rand_float(*self.command_cfg["lin_vel_y_range"], (len(envs_idx),), self.device)
-            self.commands[envs_idx, 2] = gs_rand_float(*self.command_cfg["ang_vel_range"], (len(envs_idx),), self.device)
-        else:
-            self.commands[envs_idx] = torch.zeros(self.num_commands, device=self.device, dtype=gs.tc_float)
+        # if(self.class_value > self.class1):
+        #     self.commands[envs_idx, 0] = gs_rand_float(*self.command_cfg["lin_vel_x_range"], (len(envs_idx),), self.device)
+        #     self.commands[envs_idx, 1] = gs_rand_float(*self.command_cfg["lin_vel_y_range"], (len(envs_idx),), self.device)
+        #     self.commands[envs_idx, 2] = gs_rand_float(*self.command_cfg["ang_vel_range"], (len(envs_idx),), self.device)
+        # else:
+        #     self.commands[envs_idx] = torch.zeros(self.num_commands, device=self.device, dtype=gs.tc_float)
+        self.commands[envs_idx, 0] = gs_rand_float(*self.command_cfg["lin_vel_x_range"], (len(envs_idx),), self.device)
+        self.commands[envs_idx, 1] = gs_rand_float(*self.command_cfg["lin_vel_y_range"], (len(envs_idx),), self.device)
+        self.commands[envs_idx, 2] = gs_rand_float(*self.command_cfg["ang_vel_range"], (len(envs_idx),), self.device)
         self.commands[envs_idx, 3] = gs_rand_float(*self.command_cfg["height_target_range"], (len(envs_idx),), self.device)
 
     def step(self, actions):
@@ -215,7 +218,7 @@ class WheelLeggedEnv:
             rew = reward_func() * self.reward_scales[name]
             self.rew_buf += rew
             self.episode_sums[name] += rew
-        self.class_value = self.rew_buf.mean()
+        # self.class_value = self.rew_buf.mean()
         
         # self.commands[0, 0] = torch.abs(self.commands[0, 0])
         # self.commands[0,1] = 0.0
@@ -226,7 +229,7 @@ class WheelLeggedEnv:
         # compute observations
         self.slice_obs_buf = torch.cat(
             [
-                # self.base_lin_acc * self.obs_scales["lin_acc"],  # 3
+                self.base_lin_vel * self.obs_scales["lin_vel"],  # 3
                 self.base_ang_vel * self.obs_scales["ang_vel"],  # 3
                 self.projected_gravity,  # 3
                 self.commands * self.commands_scale,  # 4
@@ -310,26 +313,35 @@ class WheelLeggedEnv:
     # ------------ reward functions----------------
     def _reward_tracking_lin_vel(self):
         # Tracking of linear velocity commands (xy axes)
-        if(self.class_value > self.class1):
-            lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
-            return torch.exp(-lin_vel_error / self.reward_cfg["tracking_lin_sigma"])
-        return torch.zeros(1, device=self.device, dtype=gs.tc_float)
+        # if(self.class_value > self.class1):
+        #     lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
+        #     return torch.exp(-lin_vel_error / self.reward_cfg["tracking_lin_sigma"])
+        # return torch.zeros(1, device=self.device, dtype=gs.tc_float)
+        lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
+        return torch.exp(-lin_vel_error / self.reward_cfg["tracking_lin_sigma"])
 
     def _reward_tracking_ang_vel(self):
         # Tracking of angular velocity commands (yaw)
-        if(self.class_value > self.class1):
-            ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-            return torch.exp(-ang_vel_error / self.reward_cfg["tracking_ang_sigma"])
-        return torch.zeros(1, device=self.device, dtype=gs.tc_float)
+        # if(self.class_value > self.class1):
+        #     ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
+        #     return torch.exp(-ang_vel_error / self.reward_cfg["tracking_ang_sigma"])
+        # return torch.zeros(1, device=self.device, dtype=gs.tc_float)
+        ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
+        return torch.exp(-ang_vel_error / self.reward_cfg["tracking_ang_sigma"])
 
     def _reward_tracking_base_height(self):
         # Penalize base height away from target
         base_height_error = torch.square(self.base_pos[:, 2] - self.commands[:, 3])
-        return torch.exp(-base_height_error / self.reward_cfg["tracking_height_sigma"])
+        # return torch.exp(-base_height_error / self.reward_cfg["tracking_height_sigma"])
+        return base_height_error
     
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
         return torch.square(self.base_lin_vel[:, 2])
+    
+    def _reward_ang_xy_vel(self):
+        # Penalize z axis base linear velocity
+        return torch.sum(torch.square(self.base_lin_vel[:, :2]), dim=1)
     
     def _reward_joint_action_rate(self):
         # Penalize changes in actions
@@ -355,7 +367,8 @@ class WheelLeggedEnv:
     def _reward_similar_legged(self):
         # 两侧腿相似 适合使用轮子行走 抑制劈岔，要和_reward_knee_height结合使用
         legged_error = torch.sum(torch.square(self.dof_pos[:,0:2] - self.dof_pos[:,2:4]), dim=1)
-        return torch.exp(-legged_error / self.reward_cfg["tracking_similar_legged_sigma"])
+        # return torch.exp(-legged_error / self.reward_cfg["tracking_similar_legged_sigma"])
+        return legged_error
 
     def _reward_knee_height(self):
         #关节处于某个范围惩罚，避免总跪着
@@ -363,14 +376,36 @@ class WheelLeggedEnv:
         below_threshold+=(torch.abs(self.right_knee_pos[:,2]) < 0.1).float()
         return below_threshold
 
-    def _reward_lin_acc(self):
-        # Penalize z axis base linear velocity
-        return torch.sum(torch.square(self.base_lin_acc))
+    # def _reward_lin_acc(self):
+    #     # Penalize z axis base linear velocity
+    #     return torch.sum(torch.square(self.base_lin_acc))
 
     def _reward_ang_acc(self):
         # Penalize z axis base linear velocity
-        return torch.sum(torch.square(self.base_ang_acc))
+        return torch.sum(torch.square(self.base_ang_acc[:,:2]))
 
     def _reward_dof_acc(self):
         # Penalize z axis base linear velocity
-        return torch.sum(torch.square((self.dof_vel - self.last_dof_vel)*self.dt))
+        return torch.sum(torch.square((self.dof_vel - self.last_dof_vel)/self.dt))
+
+    def _reward_dof_force(self):
+        # Penalize z axis base linear velocity
+        return torch.sum(torch.square(self.dof_force ), dim=1)
+    
+    def _reward_action_smooth(self):
+        # Penalize changes in actions
+        return torch.sum(
+            torch.square(
+                self.actions[:, :2]
+                - 2 * self.last_actions[:, :2, 0]
+                + self.last_actions[:, :2, 1]
+            ),
+            dim=1,
+        ) + torch.sum(
+            torch.square(
+                self.actions[:, 3:5]
+                - 2 * self.last_actions[:, 3:5, 0]
+                + self.last_actions[:, 3:5, 1]
+            ),
+            dim=1,
+        )
