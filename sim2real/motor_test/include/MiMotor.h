@@ -172,6 +172,8 @@ public:
   MiCANMsg *set_can_id(uint8_t motor_id, uint8_t id);
   MiCANMsg *set_zero_point(uint8_t motor_id);
 
+  MiCANMsg *set_runmode(uint8_t motor_id, uint8_t runmode);
+
 private:
   int float_to_uint(float x, float x_min, float x_max, int bits);
   MiCANMsg mi_can_msg;

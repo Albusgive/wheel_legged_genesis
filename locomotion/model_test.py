@@ -103,23 +103,23 @@ print(link.idx)
 import numpy as np
 scene.step()
 while True:
-    link_pos = rigid_solver.get_links_pos([1,])
-    force = 100 * link_pos
-    rigid_solver.apply_links_external_force(
-        force=force,
-        links_idx=[1,],
-    )
-    robot.control_dofs_position(
-            np.array([0.6, 0.0, 0.6, 0.0, 0.0, 0.0]),
-            dofs_idx,
-        )
-    scene.step()
+    # link_pos = rigid_solver.get_links_pos([1,])
+    # force = 100 * link_pos
+    # rigid_solver.apply_links_external_force(
+    #     force=force,
+    #     links_idx=[1,],
+    # )
+    # robot.control_dofs_position(
+    #         np.array([0.6, 0.0, 0.6, 0.0, 0.0, 0.0]),
+    #         dofs_idx,
+    #     )
+    # scene.step()
     # print(robot.get_pos())
     # left_knee_pos = left_knee.get_pos()
     # print("left_knee_pos    ",left_knee_pos)
     # force = robot.get_links_net_contact_force()
     # dof_vel = robot.get_dofs_velocity()
     # print("dof_pos:",robot.get_dofs_position(dofs_idx))
-    time.sleep(0.1)
+    # time.sleep(0.1)
     cam.render()
 # cam.stop_recording(save_to_filename='video.mp4', fps=60)

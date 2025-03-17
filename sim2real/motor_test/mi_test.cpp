@@ -7,7 +7,7 @@ int main() {
     std::cout << "init pcan false" << std::endl;
 
   MiMotor mi;
-  int motor_id = 10;
+  int motor_id = 5;
   // pcan.send(channel, mi.set_can_id(15, motor_id));
 
   TPCANMsg motor_enable = *mi.enableMotor(motor_id, true);
@@ -16,9 +16,12 @@ int main() {
   // auto loc = *mi.locomotion(motor_id, 0.0, 0.0, 1.0, 0.0, 0.1);
   // pcan.send(channel, loc);
 
-  auto send_msg = *mi.set_parameter(motor_id, motor_indexs::spd_ref, 2.0);
-  send_msg.print();
+  auto send_msg = *mi.set_runmode(motor_id, 2);
   pcan.send(channel, send_msg);
+
+  auto send_speed = *mi.set_parameter(motor_id, motor_indexs::spd_ref, -2.0);
+  send_speed.print();
+  pcan.send(channel, send_speed);
 
   //   send_msg = mi.set_parameter(motor_id, motor_indexs::limit_cur, 23);
   //   pcan.send(channel, send_msg);
@@ -28,11 +31,12 @@ int main() {
     auto [is_read, can_msg] = pcan.read(channel);
     if (is_read) {
       // MiCANMsg(can_msg).print();
-      // auto decode = mi.decode(can_msg);
-      // decode.print();
-      // decode.invertMotor()->print();
+      auto decode = mi.decode(can_msg);
+      decode.print();
+      decode.invertMotor()->print();
     }
     // pcan.send(channel, loc);
+    pcan.send(channel, send_speed);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
