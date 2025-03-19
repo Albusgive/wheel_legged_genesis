@@ -13,9 +13,9 @@ def get_train_cfg(exp_name, max_iterations):
 
     train_cfg_dict = {
         "algorithm": {
-            "clip_param": 0.2,
-            "desired_kl": 0.008,
-            "entropy_coef": 0.01,
+            "clip_param": 0.15,
+            "desired_kl": 0.005,
+            "entropy_coef": 0.005,
             "gamma": 0.995,
             "lam": 0.95,
             "learning_rate": 1e-3,
@@ -31,7 +31,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128, 64],
             "critic_hidden_dims": [256, 128, 64],
-            "init_noise_std": 4.0,
+            "init_noise_std": 10.0,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -114,15 +114,15 @@ def get_cfgs():
         # PD
         "joint_kp": 20.0,
         "joint_kd": 0.5,
-        "wheel_kp": 15.0,
+        "wheel_kp": 10.0,
         "wheel_kd": 0.3,
-        "joint_damping": 2,
-        "wheel_damping": 2.0, #damping代替kd 到测试中damping->kd
-        "stiffness":1.5, #不包含轮
+        "joint_damping": 1.0,
+        "wheel_damping": 1.0, #damping代替kd 到测试中damping->kd
+        "stiffness":1.0, #不包含轮
         "armature":0.2,
         # termination 角度制    obs的angv弧度制
         "termination_if_roll_greater_than": 20,  # degree
-        "termination_if_pitch_greater_than": 20, #15度以内都摆烂，会导致episode太短难以学习
+        "termination_if_pitch_greater_than": 25, #15度以内都摆烂，会导致episode太短难以学习
         # "termination_if_base_height_greater_than": 0.1,
         # "termination_if_knee_height_greater_than": 0.00,
         "termination_if_base_connect_plane_than": True, #触地重置
@@ -137,7 +137,7 @@ def get_cfgs():
                 ],
         # base pose
         "base_init_pos":{
-            "urdf":[0.0, 0.0, 0.22],#稍微高一点点
+            "urdf":[0.0, 0.0, 0.2],#稍微高一点点
             "mjcf":[0.0, 0.0, 0.285],
             },
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],#0.996195, 0, 0.0871557, 0
@@ -165,7 +165,7 @@ def get_cfgs():
     reward_cfg = {
         "tracking_lin_sigma": 0.3, 
         "tracking_ang_sigma": 0.15, 
-        "tracking_height_sigma": 0.003,
+        "tracking_height_sigma": 0.001,
         "tracking_similar_legged_sigma": 0.1,
         "tracking_gravity_sigma": 0.02,
         "reward_scales": {
@@ -200,24 +200,25 @@ def get_cfgs():
         "curriculum_lin_vel_step":0.0015,   #比例
         "curriculum_ang_vel_step":0.0005,   #比例
         # "curriculum_height_target_step":0.005,   #高度，先高再低，base_range表示[min+0.7height_range,max]
-        "curriculum_lin_vel_min_range":0.3,   #比例
-        "curriculum_ang_vel_min_range":0.07,   #比例
+        "curriculum_lin_vel_min_range":0.25,   #比例
+        "curriculum_ang_vel_min_range":0.045,   #比例
         "lin_vel_err_range":[0.15,0.20],  #课程误差阈值
         "ang_vel_err_range":[0.3,0.4],  #课程误差阈值 连续曲线>方波>不波动
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动
     domain_rand_cfg = { 
-        "friction_ratio_range":[0.8 , 1.2],
+        "friction_ratio_range":[0.8 , 1.1],
         "random_base_mass_shift_range":[-2 , 2], #质量偏移量
         "random_other_mass_shift_range":[-0.1, 0.1],  #质量偏移量
-        "random_base_com_shift":0.05, #位置偏移量 xyz
+        "random_base_com_shift":0.1, #位置偏移量 xyz
         "random_other_com_shift":0.01, #位置偏移量 xyz
-        "random_KP":[0.9, 1.1], #比例
-        "random_KD":[0.9, 1.1], #比例
-        "random_default_joint_angles":[-0.1,0.1], #rad
-        "dof_damping_range":[0.8 , 1.2], #比例
-        "dof_stiffness_range":[0.8 , 1.2], #比例 
-        "dof_armature_range":[0.8 , 1.2], #比例 额外惯性 类似电机减速器惯性
+        "random_KP":[0.8, 1.2], #比例
+        "random_KD":[0.8, 1.2], #比例
+        "random_default_joint_angles":[-0.05,0.05], #rad
+        "joint_damping_range":[0.5 , 1.5], #范围
+        "wheel_damping_range":[0.5 , 1.5], #范围
+        "dof_stiffness_range":[0.5 , 2.0], #范围 不包含轮
+        "dof_armature_range":[0.0 , 0.5], #范围 额外惯性 类似电机减速器惯性
     }
     #地形配置
     terrain_cfg = {
@@ -238,8 +239,8 @@ def get_cfgs():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="wheel-legged-walking")
-    parser.add_argument("-B", "--num_envs", type=int, default=4096)
-    parser.add_argument("--max_iterations", type=int, default=10000)
+    parser.add_argument("-B", "--num_envs", type=int, default=6144)
+    parser.add_argument("--max_iterations", type=int, default=30000)
     args = parser.parse_args()
 
     gs.init(logging_level="warning",backend=gs.gpu)
