@@ -31,7 +31,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128, 64],
             "critic_hidden_dims": [256, 128, 64],
-            "init_noise_std": 1.0,
+            "init_noise_std": 4.0,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -108,16 +108,16 @@ def get_cfgs():
             # "right_hip_joint":23.6,
             "right_thigh_joint": 40.0,
             "right_calf_joint": 40.0,
-            "left_wheel_joint": 40.0, #给大点，测试的时候可以小
-            "right_wheel_joint": 40.0,
+            "left_wheel_joint": 12.0, #给大点，测试的时候可以小
+            "right_wheel_joint": 12.0,
         },
         # PD
         "joint_kp": 20.0,
         "joint_kd": 0.5,
-        "wheel_kd": 1.0,
+        "wheel_kd": 1.5,
         "joint_damping": 0.8,
         "wheel_damping": 0.8, #damping代替kd 到测试中damping->kd
-        "stiffness":0.01, #不包含轮
+        "stiffness":0.1, #不包含轮
         "armature":0.01,
         # termination 角度制    obs的angv弧度制
         "termination_if_roll_greater_than": 20,  # degree
@@ -143,7 +143,7 @@ def get_cfgs():
         "episode_length_s": 15.0,
         "resampling_time_s": 5.0,
         "joint_action_scale": 0.5,
-        "wheel_action_scale": 5,
+        "wheel_action_scale": 10,
         "simulate_action_latency": True,
         "clip_actions": 100.0,
     }
@@ -162,7 +162,7 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "tracking_lin_sigma": 0.15, 
+        "tracking_lin_sigma": 0.3, 
         "tracking_ang_sigma": 0.15, 
         "tracking_height_sigma": 0.001,
         "tracking_similar_legged_sigma": 0.1,
@@ -172,14 +172,14 @@ def get_cfgs():
             "tracking_ang_vel": 1.5,
             "tracking_base_height": 2.0,    #和similar_legged对抗，similar_legged先提升会促进此项
             "lin_vel_z": -0.2, #大了影响高度变换速度
-            "joint_action_rate": -0.006,
-            "wheel_action_rate": -0.002,
+            "joint_action_rate": -0.003,
+            "wheel_action_rate": -0.003,
             "similar_to_default": 0.0,
-            "projected_gravity": 5.0,
+            "projected_gravity": 6.0,
             "similar_legged": 0.7,  #tracking_base_height和knee_height对抗
             "dof_vel": -0.005,
-            "dof_acc": -0.5e-9,
-            "dof_force": -0.5e-5,
+            "dof_acc": -1e-9,
+            "dof_force": -0.0001,
             "knee_height": -0.3,    #相当有效，和similar_legged结合可以抑制劈岔和跪地重启，稳定运行
             "ang_vel_xy": -0.02,
             "collision": -0.0008,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
@@ -196,12 +196,12 @@ def get_cfgs():
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.003,   #比例
-        "curriculum_ang_vel_step":0.001,   #比例
+        "curriculum_lin_vel_step":0.0015,   #比例
+        "curriculum_ang_vel_step":0.0005,   #比例
         # "curriculum_height_target_step":0.005,   #高度，先高再低，base_range表示[min+0.7height_range,max]
         "curriculum_lin_vel_min_range":0.25,   #比例
         "curriculum_ang_vel_min_range":0.045,   #比例
-        "lin_vel_err_range":[0.2,0.25],  #课程误差阈值
+        "lin_vel_err_range":[0.15,0.20],  #课程误差阈值
         "ang_vel_err_range":[0.3,0.4],  #课程误差阈值 连续曲线>方波>不波动
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动
@@ -211,13 +211,13 @@ def get_cfgs():
         "random_other_mass_shift_range":[-0.1, 0.1],  #质量偏移量
         "random_base_com_shift":0.1, #位置偏移量 xyz
         "random_other_com_shift":0.01, #位置偏移量 xyz
-        "random_KP":[0.9, 1.1], #比例
-        "random_KD":[0.9, 1.1], #比例
+        "random_KP":[0.8, 1.2], #比例
+        "random_KD":[0.8, 1.2], #比例
         "random_default_joint_angles":[-0.05,0.05], #rad
-        "joint_damping_range":[0.5 , 1.5], #范围
-        "wheel_damping_range":[0.5 , 1.5], #范围
-        "dof_stiffness_range":[0.0 , 0.01], #范围 不包含轮
-        "dof_armature_range":[0.0 , 0.01], #范围 额外惯性 类似电机减速器惯性
+        "joint_damping_range":[0.1 , 1.5], #范围
+        "wheel_damping_range":[0.1 , 1.5], #范围
+        "dof_stiffness_range":[0.0 , 0.5], #范围 不包含轮
+        "dof_armature_range":[0.0 , 0.05], #范围 额外惯性 类似电机减速器惯性
     }
     #地形配置
     terrain_cfg = {
