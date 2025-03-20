@@ -16,8 +16,8 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 
-set(TORCH_FOLDER /home/albusgive/libtorch-cxx11-abi-shared-with-deps-2.6.0+rocm6.2.4/libtorch/share/cmake)
-# set(TORCH_FOLDER /home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/share/cmake)
+# set(TORCH_FOLDER /home/albusgive/libtorch-cxx11-abi-shared-with-deps-2.6.0+rocm6.2.4/libtorch/share/cmake)
+set(TORCH_FOLDER /home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/share/cmake)
 find_package(Torch REQUIRED PATHS ${TORCH_FOLDER} NO_DEFAULT_PATH)
 
 include_directories(${EIGEN3_INCLUDE_DIR})

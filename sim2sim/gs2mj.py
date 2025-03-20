@@ -70,7 +70,9 @@ def get_obs(env_cfg, obs_scales, actions, default_dof_pos, commands=[0.0, 0.0, 0
 
     print("base_lin_vel:", base_lin_vel)
     print("base_ang_vel:", base_ang_vel)
-    print("dof_vel:", dof_vel[4:6])
+    print("projected_gravity:", projected_gravity)
+    print("dof_pos:", dof_pos)
+    print("dof_vel:", dof_vel)
     print("commands:", commands)
     obs_saver.add_tensor("base_lin_vel", base_lin_vel)
     obs_saver.add_tensor("base_ang_vel", base_ang_vel)
@@ -159,7 +161,7 @@ def main():
             history_obs_buf[-1, :] = slice_obs_buf 
 
             # 更新动作
-            target_dof_pos = actions[0:4] * 2.0#env_cfg["joint_action_scale"] + default_dof_pos[0:4]
+            target_dof_pos = actions[0:4] * 0.5#env_cfg["joint_action_scale"] + default_dof_pos[0:4]
             target_dof_vel = actions[4:6] * 1.5#env_cfg["wheel_action_scale"]
             target_dof_pos = torch.clamp(target_dof_pos, dof_pos_lower[0:4],dof_pos_upper[0:4])
             # print("act:", act)

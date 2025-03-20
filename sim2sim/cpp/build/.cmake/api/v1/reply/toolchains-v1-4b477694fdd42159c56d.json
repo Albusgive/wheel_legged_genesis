@@ -1,0 +1,154 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/lib/gcc/x86_64-linux-gnu/12/include",
+						"/usr/local/include",
+						"/usr/include/x86_64-linux-gnu",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/lib/gcc/x86_64-linux-gnu/12",
+						"/usr/lib/x86_64-linux-gnu",
+						"/usr/lib",
+						"/lib/x86_64-linux-gnu",
+						"/lib"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"gcc",
+						"gcc_s",
+						"c",
+						"gcc",
+						"gcc_s"
+					]
+				},
+				"path" : "/usr/bin/cc",
+				"version" : "12.3.0"
+			},
+			"language" : "C",
+			"sourceFileExtensions" : 
+			[
+				"c",
+				"m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"id" : "NVIDIA",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/include/c++/12",
+						"/usr/include/x86_64-linux-gnu/c++/12",
+						"/usr/include/c++/12/backward",
+						"/usr/lib/gcc/x86_64-linux-gnu/12/include",
+						"/usr/local/include",
+						"/usr/include/x86_64-linux-gnu",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/local/cuda/targets/x86_64-linux/lib/stubs",
+						"/usr/local/cuda/targets/x86_64-linux/lib",
+						"/usr/lib/gcc/x86_64-linux-gnu/12",
+						"/usr/lib/x86_64-linux-gnu",
+						"/usr/lib",
+						"/lib/x86_64-linux-gnu",
+						"/lib"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"stdc++",
+						"m",
+						"gcc_s",
+						"gcc",
+						"c",
+						"gcc_s",
+						"gcc"
+					]
+				},
+				"path" : "/usr/local/cuda/bin/nvcc",
+				"version" : "12.4.99"
+			},
+			"language" : "CUDA",
+			"sourceFileExtensions" : 
+			[
+				"cu"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/include/c++/12",
+						"/usr/include/x86_64-linux-gnu/c++/12",
+						"/usr/include/c++/12/backward",
+						"/usr/lib/gcc/x86_64-linux-gnu/12/include",
+						"/usr/local/include",
+						"/usr/include/x86_64-linux-gnu",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/lib/gcc/x86_64-linux-gnu/12",
+						"/usr/lib/x86_64-linux-gnu",
+						"/usr/lib",
+						"/lib/x86_64-linux-gnu",
+						"/lib"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"stdc++",
+						"m",
+						"gcc_s",
+						"gcc",
+						"c",
+						"gcc_s",
+						"gcc"
+					]
+				},
+				"path" : "/usr/bin/c++",
+				"version" : "12.3.0"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}

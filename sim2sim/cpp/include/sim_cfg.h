@@ -7,8 +7,8 @@ class ENV_CFG {
 public:
   int num_actions = 6;
   int history_length = 5;
-  int num_obs = 174;
-  int num_slice_obs = 29;
+  // int num_obs = 174;
+  // int num_slice_obs = 29;
   int num_commands = 4;
   std::vector<float> default_joint_angles;
   std::vector<float> min_joint_angles;
@@ -37,8 +37,8 @@ public:
 
 class ACTION_CFG {
 public:
-  float joint_action_scale = 0.1; //0.5
-  float wheel_action_scale = 2; //10
+  float joint_action_scale = 0.5; //0.5
+  float wheel_action_scale = 1.5; //10
   float clip_actions = 100;
   float kp = 30.0;
   float kd = 1.2;

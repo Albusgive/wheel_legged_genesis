@@ -44,7 +44,7 @@ class WheelLeggedEnv:
 
         # create scene
         self.scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=5),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
@@ -142,7 +142,7 @@ class WheelLeggedEnv:
         # PD control parameters
         self.kp = np.full((self.num_envs, self.num_actions), self.env_cfg["joint_kp"])
         self.kd = np.full((self.num_envs, self.num_actions), self.env_cfg["joint_kd"])
-        self.kp[:,4:6] = self.env_cfg["wheel_kp"]
+        self.kp[:,4:6] = 0
         self.kd[:,4:6] = self.env_cfg["wheel_kd"]
         self.robot.set_dofs_kp(self.kp, self.motor_dofs)
         self.robot.set_dofs_kv(self.kd, self.motor_dofs)
@@ -583,7 +583,7 @@ class WheelLeggedEnv:
         max_condition = error > upper_err
         # 调整 scale
         scale[min_condition] += scale_step
-        scale[max_condition] -= scale_step * 5
+        scale[max_condition] -= scale_step * 2
         scale.clip_(min_range, 1)
         # 更新 command_ranges
         range_min, range_max = range_cfg

@@ -1,0 +1,295 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "gs2mj"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"target_link_libraries",
+			"add_compile_options",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 26,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 8,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 23,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 24,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wpedantic"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "-D_GLIBCXX_USE_CXX11_ABI=1"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "USE_C10D_GLOO"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_C10D_NCCL"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_DISTRIBUTED"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_RPC"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "USE_TENSORPIPE"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "mjUSEPLATFORMSIMD"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 4,
+					"path" : "/usr/include/eigen3"
+				},
+				{
+					"backtrace" : 5,
+					"path" : "/home/albusgive2/wheel_legged_genesis/sim2sim/cpp/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/include/torch/csrc/api/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/usr/local/cuda/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/opt/mujoco/include"
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				0,
+				1
+			]
+		}
+	],
+	"id" : "gs2mj::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-L/lib/intel64",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-L/lib/intel64_win",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-L/lib/win-x64",
+				"role" : "libraryPath"
+			},
+			{
+				"fragment" : "-Wl,-rpath,/lib/intel64:/lib/intel64_win:/lib/win-x64:/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib:/usr/local/cuda/lib64:/opt/mujoco/lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libtorch.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libc10.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libkineto.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/local/cuda/lib64/libnvrtc.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libc10_cuda.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/opt/mujoco/lib/libmujoco.so.3.2.8",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lglut",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lGL",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lGLU",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lglfw",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-ludev",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-Wl,--no-as-needed,\"/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libtorch_cpu.so\" -Wl,--as-needed",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-Wl,--no-as-needed,\"/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libtorch_cuda.so\" -Wl,--as-needed",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libc10_cuda.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libc10.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/usr/local/cuda/lib64/libcudart.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-Wl,--no-as-needed,\"/home/albusgive2/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124/libtorch/lib/libtorch.so\" -Wl,--as-needed",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/usr/local/cuda/lib64/libnvToolsExt.so",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "gs2mj",
+	"nameOnDisk" : "gs2mj",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "gs2mj.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "gamepad.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "EXECUTABLE"
+}

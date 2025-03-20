@@ -1,0 +1,3 @@
+/home/albusgive2/wheel_legged_genesis/sim2sim/cpp/build/CMakeFiles/gs2mj.dir
+/home/albusgive2/wheel_legged_genesis/sim2sim/cpp/build/CMakeFiles/edit_cache.dir
+/home/albusgive2/wheel_legged_genesis/sim2sim/cpp/build/CMakeFiles/rebuild_cache.dir

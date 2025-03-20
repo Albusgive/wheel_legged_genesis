@@ -211,12 +211,12 @@ std::vector<float> compute_observations(std::vector<float> commands) {
 
   // num 3
   auto base_lin_vel = get_sensor_data(m, d, "base_lin_vel");
-  base_lin_vel = world2self(base_quat, base_lin_vel);
-  for (int i = 0; i < base_lin_vel.size(); i++) {
-    base_lin_vel[i] *= obs_sacle.lin_vel;
-    obs.push_back(base_lin_vel[i]);
-  }
-  cout_vector(base_lin_vel, "base_lin_vel", Color::Green);
+  // base_lin_vel = world2self(base_quat, base_lin_vel);
+  // for (int i = 0; i < base_lin_vel.size(); i++) {
+  //   base_lin_vel[i] *= obs_sacle.lin_vel;
+  //   obs.push_back(base_lin_vel[i]);
+  // }
+  // cout_vector(base_lin_vel, "base_lin_vel", Color::Green);
 
   // num 3
   auto base_ang_vel = get_sensor_data(m, d, "base_ang_vel");
@@ -246,6 +246,7 @@ std::vector<float> compute_observations(std::vector<float> commands) {
     obs.push_back((dof_p[0] - env_cfg.default_joint_angles[i]) *
                   obs_sacle.dof_pos);
   }
+  cout_vector(dof_pos, "dof_pos", Color::Blue);
 
   // dof_vel num 6
   std::vector<float> dof_vel;
@@ -254,6 +255,7 @@ std::vector<float> compute_observations(std::vector<float> commands) {
     dof_vel.push_back(dof_v[0]);
     obs.push_back(dof_v[0] * obs_sacle.dof_vel);
   }
+  cout_vector(dof_vel, "dof_vel", Color::Blue);
 
   // action num 6
   for (auto &i : obs_actions)
@@ -413,7 +415,7 @@ int main(int argc, const char **argv) {
       d->ctrl[i] = actions[i];
     }
     cout_vector(commands, "commands", Color::Red);
-    // cout_vector(actions, "actions", Color::Green);
+    cout_vector(actions, "actions", Color::Green);
     // cout_vector(commands, "commands",Color::Red);
 
     //同步时间
