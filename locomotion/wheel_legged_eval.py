@@ -31,6 +31,8 @@ def main():
     terrain_cfg["eval"] = "agent_eval_gym" #agent_eval_gym/agent_train_gym/circular
     # env_cfg["kp"] = 40
     # env_cfg["wheel_action_scale"] = 5
+    # env_cfg["joint_damping"] = 0
+    # env_cfg["wheel_damping"] = 0
     env = WheelLeggedEnv(
         num_envs=1,
         env_cfg=env_cfg,

@@ -38,7 +38,7 @@ public:
 class ACTION_CFG {
 public:
   float joint_action_scale = 0.5; //0.5
-  float wheel_action_scale = 1.5; //10
+  float wheel_action_scale = 10; //10
   float clip_actions = 100;
   float kp = 30.0;
   float kd = 1.2;

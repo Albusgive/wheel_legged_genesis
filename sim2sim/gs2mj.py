@@ -138,6 +138,7 @@ def main():
         [env_cfg["default_joint_angles"][name] for name in env_cfg["dof_names"]],
         device=device,
         dtype=torch.float32)
+    actions = torch.zeros((env_cfg["num_actions"]), device=device, dtype=torch.float32)
 
     # from IPython import embed; embed()
     # 从未上电姿态站立
@@ -148,21 +149,19 @@ def main():
     # 启动 mujoco 渲染
     with mujoco.viewer.launch_passive(m, d) as viewer:
         while viewer.is_running():
-            actions = loaded_policy(obs_buf)
-            actions = torch.clip(actions, -env_cfg["clip_actions"], env_cfg["clip_actions"])
             slice_obs_buf = get_obs(env_cfg=env_cfg, obs_scales=obs_cfg["obs_scales"],
                                     actions=actions, default_dof_pos=default_dof_pos, commands=commands)
             slice_obs_buf = slice_obs_buf.unsqueeze(0)
             obs_buf = torch.cat([history_obs_buf, slice_obs_buf], dim=0).view(-1)
-            
             # 更新历史缓冲区
             if obs_cfg["history_length"] > 1:
                 history_obs_buf[:-1, :] = history_obs_buf[1:, :].clone()  # 移位操作
             history_obs_buf[-1, :] = slice_obs_buf 
-
+            actions = loaded_policy(obs_buf)
+            actions = torch.clip(actions, -env_cfg["clip_actions"], env_cfg["clip_actions"])
             # 更新动作
-            target_dof_pos = actions[0:4] * 0.5#env_cfg["joint_action_scale"] + default_dof_pos[0:4]
-            target_dof_vel = actions[4:6] * 1.5#env_cfg["wheel_action_scale"]
+            target_dof_pos = actions[0:4] * env_cfg["joint_action_scale"] + default_dof_pos[0:4]
+            target_dof_vel = actions[4:6] * env_cfg["wheel_action_scale"]
             target_dof_pos = torch.clamp(target_dof_pos, dof_pos_lower[0:4],dof_pos_upper[0:4])
             # print("act:", act)
             for i in range(env_cfg["num_actions"]-2):

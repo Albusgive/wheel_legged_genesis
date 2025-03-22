@@ -113,11 +113,11 @@ def get_cfgs():
         },
         # PD
         "joint_kp": 20.0,
-        "joint_kd": 0.5,
-        "wheel_kd": 1.5,
-        "joint_damping": 0.8,
-        "wheel_damping": 0.8, #damping代替kd 到测试中damping->kd
-        "stiffness":0.1, #不包含轮
+        "joint_kv": 0.5,
+        "wheel_kv": 1.0,
+        "joint_damping": 1.0,
+        "wheel_damping": 1.0, #damping代替kv 到测试中damping->kv
+        "stiffness":0.0, #不包含轮
         "armature":0.01,
         # termination 角度制    obs的angv弧度制
         "termination_if_roll_greater_than": 20,  # degree
@@ -162,8 +162,8 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "tracking_lin_sigma": 0.3, 
-        "tracking_ang_sigma": 0.15, 
+        "tracking_lin_sigma": 0.2, 
+        "tracking_ang_sigma": 0.2, 
         "tracking_height_sigma": 0.001,
         "tracking_similar_legged_sigma": 0.1,
         "tracking_gravity_sigma": 0.02,
@@ -196,13 +196,13 @@ def get_cfgs():
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.0015,   #比例
-        "curriculum_ang_vel_step":0.0005,   #比例
+        "curriculum_lin_vel_step":0.01,   #比例
+        "curriculum_ang_vel_step":0.003,   #比例
         # "curriculum_height_target_step":0.005,   #高度，先高再低，base_range表示[min+0.7height_range,max]
         "curriculum_lin_vel_min_range":0.25,   #比例
         "curriculum_ang_vel_min_range":0.045,   #比例
-        "lin_vel_err_range":[0.15,0.20],  #课程误差阈值
-        "ang_vel_err_range":[0.3,0.4],  #课程误差阈值 连续曲线>方波>不波动
+        "lin_vel_err_range":[0.15,0.2],  #课程误差阈值
+        "ang_vel_err_range":[0.32,0.36],  #课程误差阈值 连续曲线>方波>不波动
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动
     domain_rand_cfg = { 
@@ -212,12 +212,13 @@ def get_cfgs():
         "random_base_com_shift":0.1, #位置偏移量 xyz
         "random_other_com_shift":0.01, #位置偏移量 xyz
         "random_KP":[0.8, 1.2], #比例
-        "random_KD":[0.8, 1.2], #比例
+        "random_KV":[0.8, 1.2], #比例
         "random_default_joint_angles":[-0.05,0.05], #rad
-        "joint_damping_range":[0.1 , 1.5], #范围
-        "wheel_damping_range":[0.1 , 1.5], #范围
-        "dof_stiffness_range":[0.0 , 0.5], #范围 不包含轮
-        "dof_armature_range":[0.0 , 0.05], #范围 额外惯性 类似电机减速器惯性
+        "joint_damping_range":[0.8 , 1.2], #范围
+        "wheel_damping_range":[0.8 , 1.2], #范围
+        "dof_stiffness_range":[0.0 , 0.0], #范围 不包含轮 [0.0 , 0.0]就是关闭，关闭的时候把初始值也调0
+        "dof_stiffness_descent":[0.1 , 0.8], #刚度下降[max_stiffness，仿真步数占比阈值]，和域随机化冲突，二选一
+        "dof_armature_range":[0.0 , 0.05], #范围 额外惯性 类似电机减速器惯性 有助于仿真稳定性
     }
     #地形配置
     terrain_cfg = {

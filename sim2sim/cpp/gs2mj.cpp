@@ -211,12 +211,12 @@ std::vector<float> compute_observations(std::vector<float> commands) {
 
   // num 3
   auto base_lin_vel = get_sensor_data(m, d, "base_lin_vel");
-  // base_lin_vel = world2self(base_quat, base_lin_vel);
-  // for (int i = 0; i < base_lin_vel.size(); i++) {
-  //   base_lin_vel[i] *= obs_sacle.lin_vel;
-  //   obs.push_back(base_lin_vel[i]);
-  // }
-  // cout_vector(base_lin_vel, "base_lin_vel", Color::Green);
+  base_lin_vel = world2self(base_quat, base_lin_vel);
+  for (int i = 0; i < base_lin_vel.size(); i++) {
+    base_lin_vel[i] *= obs_sacle.lin_vel;
+    // obs.push_back(base_lin_vel[i]);
+  }
+  cout_vector(base_lin_vel, "base_lin_vel", Color::Green);
 
   // num 3
   auto base_ang_vel = get_sensor_data(m, d, "base_ang_vel");
@@ -322,7 +322,7 @@ int main(int argc, const char **argv) {
   std::vector<float> gamepad_scale = {1.0, 1.0, 3.14, 0.05};
   pad.bindGamePadValues([&](GamePadValues map) {
     // 前ly为- 左lx为- 左转rx为-
-    commands[0] = -(float)map.ly / 32767.0 * gamepad_scale[0];
+    commands[0] = -(float)map.ly / 32767.0 * gamepad_scale[0] * 2.0;
     commands[1] = 0;
     commands[2] = -(float)map.rx / 32767.0 * gamepad_scale[2];
     commands[3] += (float)(map.lt + 32767) / 65535.0 * gamepad_scale[3];
