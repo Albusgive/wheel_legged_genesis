@@ -23,7 +23,4 @@ you need a gamepad
 ### Before running
 pip install mujoco
 ### run
-in sim2sim `python gs2mj.py`
-### note  
-When the joint angle in the mujoco reaches +-300, it is forced to lock again, and do not send a control command all the time during the test  
-mujoco中关节角度在达到+-300的时候回强制锁死，测试的过程中不要一直发送一个控制指令  
+in sim2sim `python gs2mj.py` 
