@@ -33,6 +33,8 @@
 
 #include <chrono>
 #include <thread>
+#include <vector>
+#include <random>
 
 auto device = torch::kCUDA;
 
@@ -122,6 +124,29 @@ void mouse_move(GLFWwindow *window, double xpos, double ypos) {
 void scroll(GLFWwindow *window, double xoffset, double yoffset) {
   // emulate vertical mouse motion = 5% of window height
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
+}
+
+void addGaussianNoise(std::vector<float>& data, double stddev) {
+  // 初始化随机数生成器
+  std::random_device rd;
+  std::mt19937 generator(rd());  // 使用Mersenne Twister引擎
+  std::normal_distribution<float> dist(0.0, stddev);
+
+  // 为每个元素添加噪声
+  for (auto& x : data) {
+      x += dist(generator);
+  }
+}
+
+void addUniformNoise(std::vector<float>& data, double noise) {
+  // 初始化随机数引擎和分布
+  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_real_distribution<float> dist(-noise, noise);
+  // 遍历vector添加噪声
+  for (auto& x : data) {
+      x += dist(generator);
+  }
 }
 
 std::vector<float> get_sensor_data(const mjModel *model, const mjData *data,
@@ -232,8 +257,10 @@ std::vector<float> compute_observations(std::vector<float> commands) {
   for (auto &i : projected_gravity) {
     obs.push_back(i);
   }
+  cout_vector(projected_gravity, "projected_gravity", Color::Green);
 
   // command---------- num 4
+  // commands[3] = 0.3;
   for (int i = 0; i < (int)obs_sacle.command_scale.size(); i++) {
     obs.push_back(commands[i] * obs_sacle.command_scale[i]);
   }
@@ -252,6 +279,7 @@ std::vector<float> compute_observations(std::vector<float> commands) {
   std::vector<float> dof_vel;
   for (int i = 0; i < env_cfg.num_actions; i++) {
     auto dof_v = get_sensor_data(m, d, env_cfg.dof_names[i] + "_v");
+    addUniformNoise(dof_v,1.5);
     dof_vel.push_back(dof_v[0]);
     obs.push_back(dof_v[0] * obs_sacle.dof_vel);
   }
@@ -319,22 +347,22 @@ int main(int argc, const char **argv) {
     std::cout << "No gamepads connected" << std::endl;
     return 0;
   }
-  std::vector<float> gamepad_scale = {1.0, 1.0, 3.14, 0.05};
+  std::vector<float> gamepad_scale = {1.2, 1.0, 3.14, 0.05};
   pad.bindGamePadValues([&](GamePadValues map) {
     // 前ly为- 左lx为- 左转rx为-
-    commands[0] = -(float)map.ly / 32767.0 * gamepad_scale[0] * 2.0;
+    commands[0] = -(float)map.ly / 32767.0 * gamepad_scale[0];
     commands[1] = 0;
     commands[2] = -(float)map.rx / 32767.0 * gamepad_scale[2];
     commands[3] += (float)(map.lt + 32767) / 65535.0 * gamepad_scale[3];
     commands[3] -= (float)(map.rt + 32767) / 65535.0 * gamepad_scale[3];
     if (commands[3] > 0.32) {
       commands[3] = 0.32;
-    } else if (commands[3] < 0.16) {
-      commands[3] = 0.16;
+    } else if (commands[3] < 0.22) {
+      commands[3] = 0.22;
     }
     if (map.x) {
       mj_resetData(m, d);
-      // module = torch::jit::load(model_path.c_str(), device);
+      module = torch::jit::load(model_path.c_str(), device);
     }
   });
   int is;
@@ -369,11 +397,20 @@ int main(int argc, const char **argv) {
   double camera_height = -30.0; // 摄像头的高度，通常可以略高于目标物体
   double cam_azimuth = 0.0;
 
+  //-----------
+  // for (int i = 0; i < 50; i++) {
+  //   mj_step(m, d);
+  // }
+
   while (!glfwWindowShouldClose(window)) {
     auto slice_obs_buf = compute_observations(commands);
     history_and_now_obs_buf.push_back(slice_obs_buf);
 
     auto obs_buf = history_and_now_obs_buf.get_all();
+    // for(int i=0;i<156;i++)
+    // {
+    //   obs_buf[i]=0;
+    // }
     torch::Tensor obs =
         torch::from_blob(obs_buf.data(), {static_cast<long>(obs_buf.size())},
                          torch::kFloat32)
@@ -411,6 +448,10 @@ int main(int argc, const char **argv) {
     obs_actions = vec;
     compute_ctrl(vec);
     // actions={-0.5,0.7,-0.5,0.7,0.0,0.0};
+    // d->ctrl[0] = 0.5;
+    // d->ctrl[1] = 1.3;
+    // d->ctrl[2] = 0.5;
+    // d->ctrl[3] = 1.3;
     for (int i = 0; i < env_cfg.num_actions; i++) {
       d->ctrl[i] = actions[i];
     }
@@ -418,7 +459,7 @@ int main(int argc, const char **argv) {
     cout_vector(actions, "actions", Color::Green);
     // cout_vector(commands, "commands",Color::Red);
 
-    //同步时间
+    // 同步时间
     auto step_start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 5; i++) // timestep 当前设置0.002
       mj_step(m, d);
@@ -456,15 +497,16 @@ int main(int argc, const char **argv) {
     // process pending GUI events, call GLFW callbacks
     glfwPollEvents();
 
-    //同步时间
+    // 同步时间
     auto current_time = std::chrono::high_resolution_clock::now();
     double elapsed_sec =
         std::chrono::duration<double>(current_time - step_start).count();
-    double time_until_next_step = m->opt.timestep*5 - elapsed_sec;
+    double time_until_next_step = m->opt.timestep * 5 - elapsed_sec;
     if (time_until_next_step > 0.0) {
       auto sleep_duration = std::chrono::duration<double>(time_until_next_step);
       std::this_thread::sleep_for(sleep_duration);
     }
+    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   // free visualization storage

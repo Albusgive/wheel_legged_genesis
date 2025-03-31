@@ -41,10 +41,11 @@ class WheelLeggedEnv:
 
         self.obs_scales = obs_cfg["obs_scales"]
         self.reward_scales = reward_cfg["reward_scales"]
+        self.noise = obs_cfg["noise"]
 
         # create scene
         self.scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=5),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
@@ -147,11 +148,19 @@ class WheelLeggedEnv:
         self.robot.set_dofs_kp(self.kp, self.motor_dofs)
         self.robot.set_dofs_kv(self.kv, self.motor_dofs)
         
-        damping = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["joint_damping"])
+        damping = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["damping"])
         damping[:,:6] = 0
-        damping[:,self.motor_dofs[5]] = self.env_cfg["wheel_damping"]
-        damping[:,self.motor_dofs[4]] = self.env_cfg["wheel_damping"]
+        self.is_damping_descent = self.curriculum_cfg["damping_descent"]
+        self.damping_max = self.curriculum_cfg["dof_damping_descent"][0]
+        self.damping_min = self.curriculum_cfg["dof_damping_descent"][1]
+        self.damping_step = self.curriculum_cfg["dof_damping_descent"][2]*(self.damping_max - self.damping_min)
+        self.damping_threshold = self.curriculum_cfg["dof_damping_descent"][3]
+        if self.is_damping_descent:
+            self.damping_base = self.damping_max
+        else:
+            self.damping_base = self.env_cfg["damping"]
         self.robot.set_dofs_damping(damping, np.arange(0,self.robot.n_dofs))
+        
         stiffness = np.full((self.num_envs,self.robot.n_dofs), self.env_cfg["stiffness"])
         stiffness[:,:6] = 0
         stiffness[:,self.motor_dofs[5]] = 0
@@ -268,10 +277,8 @@ class WheelLeggedEnv:
         self.base_mass_range = self.domain_rand_cfg["random_base_mass_shift_range"][1] - self.base_mass_low  
         self.other_mass_low = self.domain_rand_cfg["random_other_mass_shift_range"][0]
         self.other_mass_range = self.domain_rand_cfg["random_other_mass_shift_range"][1] - self.other_mass_low            
-        self.joint_damping_low = self.domain_rand_cfg["joint_damping_range"][0]
-        self.joint_damping_range = self.domain_rand_cfg["joint_damping_range"][1] - self.joint_damping_low
-        self.wheel_damping_low = self.domain_rand_cfg["wheel_damping_range"][0]
-        self.wheel_damping_range = self.domain_rand_cfg["wheel_damping_range"][1] - self.wheel_damping_low
+        self.dof_damping_low = self.domain_rand_cfg["damping_range"][0]
+        self.dof_damping_range = self.domain_rand_cfg["damping_range"][1] - self.dof_damping_low
         self.dof_stiffness_low = self.domain_rand_cfg["dof_stiffness_range"][0]
         self.dof_stiffness_range = self.domain_rand_cfg["dof_stiffness_range"][1] - self.dof_stiffness_low
         if(self.dof_stiffness_low == 0) and (self.dof_stiffness_range == 0):
@@ -286,30 +293,9 @@ class WheelLeggedEnv:
         self.kv_range = self.domain_rand_cfg["random_KV"][1] - self.kv_low
         self.joint_angle_low = self.domain_rand_cfg["random_default_joint_angles"][0]
         self.joint_angle_range = self.domain_rand_cfg["random_default_joint_angles"][1] - self.joint_angle_low
-        #init joint
-        damping = torch.full(
-            size=(self.num_envs, self.robot.n_dofs),fill_value=env_cfg["joint_damping"],
-            dtype=gs.tc_float,device=self.device)
-        damping[:, :6] = 0  # 前6列设为0
-        damping[:, self.motor_dofs[5]] = env_cfg["wheel_damping"]  # 直接赋标量值
-        damping[:, self.motor_dofs[4]] = env_cfg["wheel_damping"]
-        self.robot.set_dofs_damping(damping=damping, dofs_idx_local=np.arange(0, self.robot.n_dofs))
-        stiffness = torch.full(
-            size=(self.num_envs, self.robot.n_dofs),fill_value=env_cfg["stiffness"],
-            dtype=gs.tc_float,device=self.device)
-        stiffness[:, self.robot.n_dofs-6:] = 0  # 确保 n_dofs >= 6
-        stiffness[:, self.motor_dofs[5]] = 0
-        stiffness[:, self.motor_dofs[4]] = 0
-        self.robot.set_dofs_stiffness(stiffness=stiffness, dofs_idx_local=np.arange(0, self.robot.n_dofs))
-        armature = torch.full(
-            size=(self.num_envs, self.robot.n_dofs),fill_value=env_cfg["armature"],
-            dtype=gs.tc_float,device=self.device)
-        armature[:, :6] = 0
-        self.robot.set_dofs_armature(armature=armature, dofs_idx_local=np.arange(0, self.robot.n_dofs))
         #地形训练索引
         self.terrain_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
         # print("self.obs_buf.size(): ",self.obs_buf.size())
-        
         self.episode_lengths = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
         #外部力
         for solver in self.scene.sim.solvers:
@@ -322,11 +308,26 @@ class WheelLeggedEnv:
         self.reset()
         
     def _resample_commands(self, envs_idx):
-        for idx in envs_idx:
-            for command_idx in range(self.num_commands):
-                low = self.command_ranges[idx, command_idx, 0]
-                high = self.command_ranges[idx, command_idx, 1]
-                self.commands[idx, command_idx] = gs_rand_float(low, high, (1,), self.device)
+        if self.command_cfg["limit_cmd_random"]:
+            for idx in envs_idx:
+                lin_x_low = self.command_ranges[idx, 0, 0]
+                lin_x_high = self.command_ranges[idx, 0, 1]
+                self.commands[idx, 0] = gs_rand_float(lin_x_low, lin_x_high, (1,), self.device)
+                ang_vel_max = (self.command_cfg["wheel_max_w"]*2*self.command_cfg["wheel_radius"] - torch.abs(self.commands[idx, 0]) * 2)/self.command_cfg["wheel_spacing"]
+                ang_vel_low = self.command_ranges[idx, 2, 0]
+                ang_vel_high = self.command_ranges[idx, 2, 1]
+                ang_vel_low.clamp_min_(-ang_vel_max)
+                ang_vel_high.clamp_max_(ang_vel_max)
+                self.commands[idx, 2] = gs_rand_float(ang_vel_low, ang_vel_high, (1,), self.device)
+                self.commands[idx, 1] = gs_rand_float(self.command_ranges[idx, 1, 0], self.command_ranges[idx, 1, 1], (1,), self.device)
+                self.commands[idx, 3] = gs_rand_float(self.command_ranges[idx, 3, 0], self.command_ranges[idx, 3, 1], (1,), self.device)
+        else:
+            for idx in envs_idx:
+                for command_idx in range(self.num_commands):
+                    low = self.command_ranges[idx, command_idx, 0]
+                    high = self.command_ranges[idx, command_idx, 1]
+                    self.commands[idx, command_idx] = gs_rand_float(low, high, (1,), self.device)
+        self.commands[envs_idx, 1]=0
 
     def set_commands(self,envs_idx,commands):
         self.commands[envs_idx]=torch.tensor(commands,device=self.device, dtype=gs.tc_float)
@@ -352,12 +353,18 @@ class WheelLeggedEnv:
         inv_base_quat = inv_quat(self.base_quat)
         self.base_lin_vel[:] = transform_by_quat(self.robot.get_vel(), inv_base_quat)
         self.base_lin_acc[:] = (self.base_lin_vel[:] - self.last_base_lin_vel[:])/ self.dt
-        self.base_ang_vel[:] = transform_by_quat(self.robot.get_ang(), inv_base_quat)
+        self.base_ang_vel[:] = transform_by_quat(self.robot.get_ang(), inv_base_quat) 
         self.base_ang_acc[:] = (self.base_ang_vel[:] - self.last_base_ang_vel[:]) / self.dt
-        self.projected_gravity = transform_by_quat(self.global_gravity, inv_base_quat)
-        self.dof_pos[:] = self.robot.get_dofs_position(self.motor_dofs)
-        self.dof_vel[:] = self.robot.get_dofs_velocity(self.motor_dofs)
+        self.projected_gravity = transform_by_quat(self.global_gravity, inv_base_quat) 
+        self.dof_pos[:] = self.robot.get_dofs_position(self.motor_dofs) 
+        self.dof_vel[:] = self.robot.get_dofs_velocity(self.motor_dofs) 
         self.dof_force[:] = self.robot.get_dofs_force(self.motor_dofs)
+        if self.noise["use"]:
+            self.base_ang_vel[:] += torch.randn_like(self.base_ang_vel) * self.noise["ang_vel"][0] + (torch.rand_like(self.base_ang_vel)*2-1) * self.noise["ang_vel"][1]
+            self.projected_gravity += torch.randn_like(self.projected_gravity) * self.noise["gravity"][0] + (torch.rand_like(self.projected_gravity)*2-1) * self.noise["gravity"][1]
+            self.dof_pos[:] += torch.randn_like(self.dof_pos) * self.noise["dof_pos"][0] + (torch.rand_like(self.dof_pos)*2-1) * self.noise["dof_pos"][1]
+            self.dof_vel[:] += torch.randn_like(self.dof_vel) * self.noise["dof_vel"][0] + (torch.rand_like(self.dof_vel)*2-1) * self.noise["dof_vel"][1]
+        
         #获取膝关节高度
         self.left_knee_pos[:] = self.left_knee.get_pos()
         self.right_knee_pos[:] = self.right_knee.get_pos()
@@ -555,10 +562,18 @@ class WheelLeggedEnv:
         dof_pos_shift = self.joint_angle_low + self.joint_angle_range * torch.rand(len(envs_idx),self.num_actions,device=self.device,dtype=gs.tc_float)
         self.default_dof_pos[envs_idx] = dof_pos_shift + self.basic_default_dof_pos
 
-        damping = (self.joint_damping_low+self.joint_damping_range * torch.rand(len(envs_idx), self.robot.n_dofs))
+        #damping下降
+        if self.is_damping_descent:
+            if self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]*self.stiffness_end/self.dt) > self.damping_threshold:
+                self.damping_base -= self.damping_step
+                if self.damping_base < self.damping_min:
+                    self.damping_base = self.damping_min
+            else:
+                self.damping_base += self.damping_step
+                if self.damping_base > self.damping_max:
+                    self.damping_base = self.damping_max      
+        damping = (self.dof_damping_low+self.dof_damping_range * torch.rand(len(envs_idx), self.robot.n_dofs)) * self.damping_base
         damping[:,:6] = 0
-        damping[:,self.motor_dofs[5]] = (self.wheel_damping_low+self.wheel_damping_range * torch.rand(len(envs_idx), ))
-        damping[:,self.motor_dofs[4]] = (self.wheel_damping_low+self.wheel_damping_range * torch.rand(len(envs_idx), ))
         self.robot.set_dofs_damping(damping=damping, 
                                    dofs_idx_local=np.arange(0, self.robot.n_dofs), 
                                    envs_idx=envs_idx)
@@ -598,7 +613,7 @@ class WheelLeggedEnv:
         max_condition = error > upper_err
         # 调整 scale
         scale[min_condition] += scale_step
-        scale[max_condition] -= scale_step * 2
+        scale[max_condition] -= scale_step
         scale.clip_(min_range, 1)
         # 更新 command_ranges
         range_min, range_max = range_cfg
@@ -634,10 +649,10 @@ class WheelLeggedEnv:
         self.command_ranges[:, 2, 0] = ang_min_range.squeeze()
         self.command_ranges[:, 2, 1] = ang_max_range.squeeze()
         #调整高度
-        add_height = self.height_error.squeeze() > 0.05
-        self.command_ranges[add_height,3,0] += self.curriculum_cfg["curriculum_ang_vel_step"]
-        cut_height = self.height_error.squeeze() < 0.1
-        self.command_ranges[cut_height,3,0] -= self.curriculum_cfg["curriculum_ang_vel_step"]
+        add_height = self.height_error.squeeze() > 0.1
+        self.command_ranges[add_height,3,0] += self.curriculum_cfg["curriculum_height_target_step"]
+        cut_height = self.height_error.squeeze() < 0.05
+        self.command_ranges[cut_height,3,0] -= self.curriculum_cfg["curriculum_height_target_step"]
         self.command_ranges[:,3,0].clip_(self.command_cfg["height_target_range"][0],
                                          self.command_cfg["height_target_range"][0] + self.height_range * (1-self.command_cfg["base_range"]))
         # 重置误差
@@ -739,7 +754,6 @@ class WheelLeggedEnv:
         knee_rew = torch.sum(torch.square(self.left_knee_pos[left_knee_idx, 2] - 0.08)) if left_knee_idx.any() else 0
         knee_rew += torch.sum(torch.square(self.right_knee_pos[right_knee_idx, 2] - 0.08)) if right_knee_idx.any() else 0
         return knee_rew
-
 
     def _reward_dof_vel(self):
         # Penalize dof velocities

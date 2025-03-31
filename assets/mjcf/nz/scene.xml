@@ -6,7 +6,7 @@
     <texture name="grid" type="2d" file="./png/desert.png"/>
     <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" rgba=".4 .4 .4 1" reflectance=".1"/>
     </asset>
-    <include file="./nz_mapping.xml"/>
+    <include file="./nz.xml"/>
     <worldbody>
         <light directional="true" ambient=".2 .2 .2"  dir="-0.5 0 -1" diffuse=".2 .2 .2" specular=".2 .2 .2" />
         <light directional="true" ambient=".2 .2 .2" dir="0 -0.5 -1" diffuse=".2 .2 .2" specular=".2 .2 .2" />
