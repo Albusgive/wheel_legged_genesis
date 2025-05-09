@@ -32,12 +32,12 @@ plane = scene.add_entity(
 )
 
 robot = scene.add_entity(
-    gs.morphs.URDF(file="assets/urdf/nz/urdf/nz.urdf",
-    pos=(0.0, 0.0, 0.5),
-    quat=(0.996195, 0, 0.0871557, 0)
+    gs.morphs.URDF(file="assets/urdf/point_foot2/urdf/point_foot2.urdf",
+    pos=(0.0, 0.0, 0.65),
+    quat=(1, 0, 0, 0)
     ),
-    # gs.morphs.MJCF(file="assets/mjcf/urdf2nz/urdf2nz.xml",
-    # pos=(0.0, 0.0, 0.15)
+    # gs.morphs.MJCF(file="assets/mjcf/point_foot2/point_foot2.xml",
+    # pos=(0.0, 0.0, 0.65)
     # ),
     # vis_mode='collision'
 )
@@ -69,14 +69,12 @@ for solver in scene.sim.solvers:
     rigid_solver = solver
 
 jnt_names = [
-    # "left_hip_joint",
+    "left_hip_joint",
     "left_thigh_joint",
     "left_calf_joint",
-    # "right_hip_joint",
+    "right_hip_joint",
     "right_thigh_joint",
     "right_calf_joint",
-    "left_wheel_joint",
-    "right_wheel_joint",
 ]
 dofs_idx = [robot.get_joint(name).dof_idx_local for name in jnt_names]
 robot.set_dofs_kp(
@@ -89,11 +87,11 @@ robot.set_dofs_kv(
 )
 left_knee = robot.get_joint("left_calf_joint")
 
-print(robot.n_links)
-link = robot.get_link("left_wheel_link")
-print(link.idx)
-link = robot.get_link("right_wheel_link")
-print(link.idx)
+# print(robot.n_links)
+# link = robot.get_link("left_calf_Link")
+# print(link.idx)
+# link = robot.get_link("right_calf_Link")
+# print(link.idx)
 
 
 # 渲染rgb、深度、分割掩码和法线图
@@ -109,11 +107,11 @@ while True:
     #     force=force,
     #     links_idx=[1,],
     # )
-    # robot.control_dofs_position(
-    #         np.array([0.6, 0.0, 0.6, 0.0, 0.0, 0.0]),
-    #         dofs_idx,
-    #     )
-    # scene.step()
+    robot.control_dofs_position(
+            np.array([0.3, -0.3, -0.6, -0.3, 0.3, 0.0]),
+            dofs_idx,
+        )
+    scene.step()
     # print(robot.get_pos())
     # left_knee_pos = left_knee.get_pos()
     # print("left_knee_pos    ",left_knee_pos)

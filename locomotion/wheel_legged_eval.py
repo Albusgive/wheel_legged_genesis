@@ -80,8 +80,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-# evaluation
-python examples/locomotion/go2_eval.py -e go2-walking -v --ckpt 100
-"""

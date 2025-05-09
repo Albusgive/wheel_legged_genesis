@@ -115,21 +115,21 @@ class WheelLeggedEnv:
             case "urdf":
                 self.robot = self.scene.add_entity(
                     gs.morphs.URDF(
-                        file="assets/urdf/nz/urdf/nz.urdf",
+                        file = self.env_cfg["urdf"],
                         pos = base_init_pos,
                         quat=self.base_init_quat.cpu().numpy(),
                     ),
                 )
             case "mjcf":
                 self.robot = self.scene.add_entity(
-                    gs.morphs.MJCF(file="assets/mjcf/nz/nz_view.xml",
+                    gs.morphs.MJCF(file = self.env_cfg["mjcf"],
                     pos=base_init_pos),
                     vis_mode='collision'
                 )
             case _:
                 self.robot = self.scene.add_entity(
                     gs.morphs.URDF(
-                        file="assets/urdf/nz/urdf/nz.urdf",
+                        file = self.env_cfg["urdf"],
                         pos = base_init_pos,
                         quat=self.base_init_quat.cpu().numpy(),
                     ),

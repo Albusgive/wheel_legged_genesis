@@ -59,6 +59,8 @@ def get_train_cfg(exp_name, max_iterations):
 def get_cfgs():
     env_cfg = {
         "num_actions": 6,
+        "urdf":"assets/urdf/nz/urdf/nz.urdf",
+        "mjcf":"assets/mjcf/nz/nz_view.xml",
         # joint names
         "default_joint_angles": {  # [rad]
             # "left_hip_joint":0.0,
@@ -284,8 +286,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-# training
-python examples/locomotion/go2_train.py
-"""
