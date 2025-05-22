@@ -52,7 +52,7 @@ class WheelLeggedEnv:
                 camera_lookat=(0.0, 0.0, 0.5),
                 camera_fov=40,
             ),
-            vis_options=gs.options.VisOptions(n_rendered_envs=1),
+            vis_options=gs.options.VisOptions(rendered_envs_idx=list(range(1))),
             rigid_options=gs.options.RigidOptions(
                 dt=self.dt,
                 constraint_solver=gs.constraint_solver.Newton,
@@ -122,8 +122,10 @@ class WheelLeggedEnv:
                 )
             case "mjcf":
                 self.robot = self.scene.add_entity(
-                    gs.morphs.MJCF(file = self.env_cfg["mjcf"],
-                    pos=base_init_pos),
+                    gs.morphs.MJCF(
+                        file = self.env_cfg["mjcf"],
+                        pos=base_init_pos
+                    ),
                     vis_mode='collision'
                 )
             case _:
@@ -138,15 +140,15 @@ class WheelLeggedEnv:
         self.scene.build(n_envs=num_envs)
 
         # names to indices
-        self.motor_dofs = [self.robot.get_joint(name).dof_idx_local for name in self.env_cfg["dof_names"]]
+        self.motors_dof_idx = [self.robot.get_joint(name).dof_start for name in self.env_cfg["joint_names"]]
 
         # PD control parameters
         self.kp = np.full((self.num_envs, self.num_actions), self.env_cfg["joint_kp"])
         self.kv = np.full((self.num_envs, self.num_actions), self.env_cfg["joint_kv"])
         self.kp[:,4:6] = 0.0
         self.kv[:,4:6] = self.env_cfg["wheel_kv"]
-        self.robot.set_dofs_kp(self.kp, self.motor_dofs)
-        self.robot.set_dofs_kv(self.kv, self.motor_dofs)
+        self.robot.set_dofs_kp(self.kp, self.motors_dof_idx)
+        self.robot.set_dofs_kv(self.kv, self.motors_dof_idx)
         
         damping = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["damping"])
         damping[:,:6] = 0
@@ -163,8 +165,8 @@ class WheelLeggedEnv:
         
         stiffness = np.full((self.num_envs,self.robot.n_dofs), self.env_cfg["stiffness"])
         stiffness[:,:6] = 0
-        stiffness[:,self.motor_dofs[5]] = 0
-        stiffness[:,self.motor_dofs[4]] = 0
+        stiffness[:,self.motors_dof_idx[5]] = 0
+        stiffness[:,self.motors_dof_idx[4]] = 0
         self.stiffness = self.domain_rand_cfg["dof_stiffness_descent"][0]
         self.stiffness_max = self.domain_rand_cfg["dof_stiffness_descent"][0]
         self.stiffness_end = self.domain_rand_cfg["dof_stiffness_descent"][1]
@@ -176,18 +178,18 @@ class WheelLeggedEnv:
         
 
         #dof limits
-        lower = [self.env_cfg["dof_limit"][name][0] for name in self.env_cfg["dof_names"]]
-        upper = [self.env_cfg["dof_limit"][name][1] for name in self.env_cfg["dof_names"]]
+        lower = [self.env_cfg["dof_limit"][name][0] for name in self.env_cfg["joint_names"]]
+        upper = [self.env_cfg["dof_limit"][name][1] for name in self.env_cfg["joint_names"]]
         self.dof_pos_lower = torch.tensor(lower).to(self.device)
         self.dof_pos_upper = torch.tensor(upper).to(self.device)
 
         # set safe force
-        lower = np.array([[-self.env_cfg["safe_force"][name] for name in self.env_cfg["dof_names"]] for _ in range(num_envs)])
-        upper = np.array([[self.env_cfg["safe_force"][name] for name in self.env_cfg["dof_names"]] for _ in range(num_envs)])
+        lower = np.array([[-self.env_cfg["safe_force"][name] for name in self.env_cfg["joint_names"]] for _ in range(num_envs)])
+        upper = np.array([[self.env_cfg["safe_force"][name] for name in self.env_cfg["joint_names"]] for _ in range(num_envs)])
         self.robot.set_dofs_force_range(
             lower          = torch.tensor(lower, device=self.device, dtype=torch.float32),
             upper          = torch.tensor(upper, device=self.device, dtype=torch.float32),
-            dofs_idx_local = self.motor_dofs,
+            dofs_idx_local = self.motors_dof_idx,
         )
 
         # prepare reward functions and multiply reward scales by dt
@@ -249,14 +251,14 @@ class WheelLeggedEnv:
         self.base_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
         self.base_quat = torch.zeros((self.num_envs, 4), device=self.device, dtype=gs.tc_float)
         self.basic_default_dof_pos = torch.tensor(
-            [self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["dof_names"]],
+            [self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["joint_names"]],
             device=self.device,
             dtype=gs.tc_float,
         )
         
-        default_dof_pos_list = [[self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["dof_names"]]] * self.num_envs
+        default_dof_pos_list = [[self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["joint_names"]]] * self.num_envs
         self.default_dof_pos = torch.tensor(default_dof_pos_list,device=self.device,dtype=gs.tc_float,)
-        init_dof_pos_list = [[self.env_cfg["joint_init_angles"][name] for name in self.env_cfg["dof_names"]]] * self.num_envs
+        init_dof_pos_list = [[self.env_cfg["joint_init_angles"][name] for name in self.env_cfg["joint_names"]]] * self.num_envs
         self.init_dof_pos = torch.tensor(init_dof_pos_list,device=self.device,dtype=gs.tc_float,)
         #膝关节
         self.left_knee = self.robot.get_joint("left_calf_joint")
@@ -339,8 +341,8 @@ class WheelLeggedEnv:
         target_dof_vel = exec_actions[:,4:6] * self.env_cfg["wheel_action_scale"]
         #dof limits
         target_dof_pos = torch.clamp(target_dof_pos, min=self.dof_pos_lower[0:4], max=self.dof_pos_upper[0:4])
-        self.robot.control_dofs_position(target_dof_pos, self.motor_dofs[0:4])
-        self.robot.control_dofs_velocity(target_dof_vel, self.motor_dofs[4:6])
+        self.robot.control_dofs_position(target_dof_pos, self.motors_dof_idx[0:4])
+        self.robot.control_dofs_velocity(target_dof_vel, self.motors_dof_idx[4:6])
 
         self.scene.step()
         # update buffers
@@ -356,9 +358,9 @@ class WheelLeggedEnv:
         self.base_ang_vel[:] = transform_by_quat(self.robot.get_ang(), inv_base_quat) 
         self.base_ang_acc[:] = (self.base_ang_vel[:] - self.last_base_ang_vel[:]) / self.dt
         self.projected_gravity = transform_by_quat(self.global_gravity, inv_base_quat) 
-        self.dof_pos[:] = self.robot.get_dofs_position(self.motor_dofs) 
-        self.dof_vel[:] = self.robot.get_dofs_velocity(self.motor_dofs) 
-        self.dof_force[:] = self.robot.get_dofs_force(self.motor_dofs)
+        self.dof_pos[:] = self.robot.get_dofs_position(self.motors_dof_idx) 
+        self.dof_vel[:] = self.robot.get_dofs_velocity(self.motors_dof_idx) 
+        self.dof_force[:] = self.robot.get_dofs_force(self.motors_dof_idx)
         if self.noise["use"]:
             self.base_ang_vel[:] += torch.randn_like(self.base_ang_vel) * self.noise["ang_vel"][0] + (torch.rand_like(self.base_ang_vel)*2-1) * self.noise["ang_vel"][1]
             self.projected_gravity += torch.randn_like(self.projected_gravity) * self.noise["gravity"][0] + (torch.rand_like(self.projected_gravity)*2-1) * self.noise["gravity"][1]
@@ -366,8 +368,8 @@ class WheelLeggedEnv:
             self.dof_vel[:] += torch.randn_like(self.dof_vel) * self.noise["dof_vel"][0] + (torch.rand_like(self.dof_vel)*2-1) * self.noise["dof_vel"][1]
         
         #获取膝关节高度
-        self.left_knee_pos[:] = self.left_knee.get_pos()
-        self.right_knee_pos[:] = self.right_knee.get_pos()
+        # self.left_knee_pos[:] = self.left_knee.get_pos()
+        # self.right_knee_pos[:] = self.right_knee.get_pos()
         #碰撞力
         self.connect_force = self.robot.get_links_net_contact_force()
 
@@ -464,7 +466,7 @@ class WheelLeggedEnv:
         self.dof_vel[envs_idx] = 0.0
         self.robot.set_dofs_position(
             position=self.dof_pos[envs_idx],
-            dofs_idx_local=self.motor_dofs,
+            dofs_idx_local=self.motors_dof_idx,
             zero_velocity=True,
             envs_idx=envs_idx,
         )
@@ -535,28 +537,28 @@ class WheelLeggedEnv:
     def domain_rand(self, envs_idx):
         friction_ratio = self.friction_ratio_low + self.friction_ratio_range * torch.rand(len(envs_idx), self.robot.n_links)
         self.robot.set_friction_ratio(friction_ratio=friction_ratio,
-                                      ls_idx_local=np.arange(0, self.robot.n_links),
+                                      links_idx_local=np.arange(0, self.robot.n_links),
                                       envs_idx = envs_idx)
 
         base_mass_shift = self.base_mass_low + self.base_mass_range * torch.rand(len(envs_idx), 1, device=self.device)
         other_mass_shift =-self.other_mass_low + self.other_mass_range * torch.rand(len(envs_idx), self.robot.n_links - 1, device=self.device)
         mass_shift = torch.cat((base_mass_shift, other_mass_shift), dim=1)
         self.robot.set_mass_shift(mass_shift=mass_shift,
-                                  ls_idx_local=np.arange(0, self.robot.n_links),
+                                  links_idx_local=np.arange(0, self.robot.n_links),
                                   envs_idx = envs_idx)
 
         base_com_shift = -self.domain_rand_cfg["random_base_com_shift"] / 2 + self.domain_rand_cfg["random_base_com_shift"] * torch.rand(len(envs_idx), 1, 3, device=self.device)
         other_com_shift = -self.domain_rand_cfg["random_other_com_shift"] / 2 + self.domain_rand_cfg["random_other_com_shift"] * torch.rand(len(envs_idx), self.robot.n_links - 1, 3, device=self.device)
         com_shift = torch.cat((base_com_shift, other_com_shift), dim=1)
         self.robot.set_COM_shift(com_shift=com_shift,
-                                 ls_idx_local=np.arange(0, self.robot.n_links),
+                                 links_idx_local=np.arange(0, self.robot.n_links),
                                  envs_idx = envs_idx)
 
-        kp_shift = (self.kp_low + self.kp_range * torch.rand(len(envs_idx), self.num_actions)) * self.kp[0]
-        self.robot.set_dofs_kp(kp_shift, self.motor_dofs, envs_idx=envs_idx)
+        kp_shift = (self.kp_low + self.kp_range * torch.rand(len(envs_idx), self.num_actions, device="cpu")) * self.kp[0]
+        self.robot.set_dofs_kp(kp_shift, self.motors_dof_idx, envs_idx=envs_idx)
 
-        kv_shift = (self.kv_low + self.kv_range * torch.rand(len(envs_idx), self.num_actions)) * self.kv[0]
-        self.robot.set_dofs_kv(kv_shift, self.motor_dofs, envs_idx = envs_idx)
+        kv_shift = (self.kv_low + self.kv_range * torch.rand(len(envs_idx), self.num_actions, device="cpu")) * self.kv[0]
+        self.robot.set_dofs_kv(kv_shift, self.motors_dof_idx, envs_idx = envs_idx)
 
         #random_default_joint_angles
         dof_pos_shift = self.joint_angle_low + self.joint_angle_range * torch.rand(len(envs_idx),self.num_actions,device=self.device,dtype=gs.tc_float)
@@ -581,8 +583,8 @@ class WheelLeggedEnv:
         if(self.is_stiffness):
             stiffness = (self.dof_stiffness_low+self.dof_stiffness_range * torch.rand(len(envs_idx), self.robot.n_dofs))
             stiffness[:,self.robot.n_dofs-6:] = 0
-            stiffness[:,self.motor_dofs[5]] = 0
-            stiffness[:,self.motor_dofs[4]] = 0
+            stiffness[:,self.motors_dof_idx[5]] = 0
+            stiffness[:,self.motors_dof_idx[4]] = 0
             self.robot.set_dofs_stiffness(stiffness=stiffness, 
                                        dofs_idx_local=np.arange(0, self.robot.n_dofs), 
                                        envs_idx=envs_idx)
@@ -595,8 +597,8 @@ class WheelLeggedEnv:
             self.stiffness = stiffness_ratio*self.stiffness_max
             stiffness = torch.full((len(envs_idx), self.robot.n_dofs),self.stiffness)
             stiffness[:,self.robot.n_dofs-6:] = 0
-            stiffness[:,self.motor_dofs[5]] = 0
-            stiffness[:,self.motor_dofs[4]] = 0
+            stiffness[:,self.motors_dof_idx[5]] = 0
+            stiffness[:,self.motors_dof_idx[4]] = 0
             self.robot.set_dofs_stiffness(stiffness=stiffness, 
                                        dofs_idx_local=np.arange(0, self.robot.n_dofs), 
                                        envs_idx=envs_idx)

@@ -65,7 +65,7 @@ class GS_ENV:
         )
 
         # add plane
-        self.scene.add_entity(gs.morphs.URDF(file="assets/terrain/plane/plane.urdf", fixed=True))
+        self.scene.add_entity(gs.morphs.URDF(file="../assets/terrain/plane/plane.urdf", fixed=True))
         # init roboot quat and pos
         match robot_morphs:
             case "urdf":
@@ -79,7 +79,7 @@ class GS_ENV:
         # add terrain 只能有一个Terrain(genesis v0.2.1)
         self.horizontal_scale = self.terrain_cfg["horizontal_scale"]
         self.vertical_scale = self.terrain_cfg["vertical_scale"]
-        self.height_field = cv2.imread("assets/terrain/png/"+self.terrain_cfg["train"]+".png", cv2.IMREAD_GRAYSCALE)
+        self.height_field = cv2.imread("../assets/terrain/png/"+self.terrain_cfg["train"]+".png", cv2.IMREAD_GRAYSCALE)
         self.terrain_height = torch.tensor(self.height_field, device=self.device) * self.vertical_scale
         if self.terrain_cfg["terrain"]:
             print("\033[1;35m open terrain\033[0m")
@@ -95,7 +95,7 @@ class GS_ENV:
                     self.base_terrain_pos[i] = self.base_init_pos + torch.tensor(self.respawn_points[i], device=self.device)
                 print("\033[1;34m respawn_points: \033[0m",self.base_terrain_pos)
             else:
-                height_field = cv2.imread("assets/terrain/png/"+self.terrain_cfg["eval"]+".png", cv2.IMREAD_GRAYSCALE)
+                height_field = cv2.imread("../assets/terrain/png/"+self.terrain_cfg["eval"]+".png", cv2.IMREAD_GRAYSCALE)
                 self.terrain = self.scene.add_entity(
                 morph=gs.morphs.Terrain(
                 pos = (1.0,1.0,0.0),

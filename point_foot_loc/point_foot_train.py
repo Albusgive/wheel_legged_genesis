@@ -31,7 +31,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128, 64],
             "critic_hidden_dims": [256, 128, 64],
-            "init_noise_std": 5,
+            "init_noise_std": 3,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -59,8 +59,8 @@ def get_train_cfg(exp_name, max_iterations):
 def get_cfgs():
     env_cfg = {
         "num_actions": 6,
-        "urdf":"assets/urdf/point_foot2/urdf/point_foot2.urdf",
-        "mjcf":"assets/mjcf/point_foot2/point_foot2.xml",
+        "urdf":"../assets/urdf/point_foot2/urdf/point_foot2.urdf",
+        "mjcf":"../assets/mjcf/point_foot2/point_foot2.xml",
         # joint names
         "default_joint_angles": {  # [rad]
             "left_hip_joint":0.0,
@@ -117,8 +117,8 @@ def get_cfgs():
         "termination_if_base_connect_plane_than": True, #触地重置
         "connect_plane_links":[ #触地重置link
             "base_link",
-            "left_thigh_Link",
-            "right_thigh_Link",
+            # "left_thigh_Link",
+            # "right_thigh_Link",
                 ],
         # base pose
         "base_init_pos":{
@@ -155,24 +155,24 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "tracking_lin_sigma": 0.1, 
-        "tracking_ang_sigma": 0.1, 
+        "tracking_lin_sigma": 0.25, 
+        "tracking_ang_sigma": 0.25, 
         "tracking_height_sigma": 0.005,
         "tracking_gravity_sigma": 0.001,
         "reward_scales": {
-            "tracking_lin_vel": 5.0,
-            "tracking_ang_vel": 5.0,
-            "tracking_base_height": 2.0,
-            "lin_vel_z": -0.2, #大了影响高度变换速度
-            "joint_action_rate": -1e-6,
+            "tracking_lin_vel": 3.0,
+            "tracking_ang_vel": 3.0,
+            "tracking_base_height": 0.0,
+            "lin_vel_z": -0.0, #大了影响高度变换速度
+            "joint_action_rate": 0,#-1e-6,
             "similar_to_default": 0.0,
-            "projected_gravity": 3.0,
-            "dof_vel": -0.0001,
-            "dof_acc": -1e-12,
-            "dof_force": -1e-5,
-            "knee_height": -0.6,    #相当有效，和similar_legged结合可以抑制劈岔和跪地重启，稳定运行
-            "ang_vel_xy": -0.01,
-            "collision": -0.0008,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
+            "projected_gravity": 6.0,
+            "dof_vel": 0,#-0.0001,
+            "dof_acc": 0,#-1e-12,
+            "dof_force": 0,#-1e-5,
+            "knee_height": -1.0,    #相当有效，和similar_legged结合可以抑制劈岔和跪地重启，稳定运行
+            "ang_vel_xy": 0,#-0.01,
+            "collision": -1.0,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
         },
     }
     command_cfg = {
@@ -181,7 +181,7 @@ def get_cfgs():
         "lin_vel_x_range": [-0.5, 0.5], #修改范围要调整奖励权重
         "lin_vel_y_range": [-0.5, 0.5],
         "ang_vel_range": [-0.5, 0.5],   #修改范围要调整奖励权重
-        "height_target_range": [0.55, 0.55],   #lower会导致跪地
+        "height_target_range": [0.0, 0.0],   #lower会导致跪地
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
@@ -197,7 +197,7 @@ def get_cfgs():
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动
     domain_rand_cfg = { 
-        "friction_ratio_range":[0.2 , 2.0],
+        "friction_ratio_range":[0.8 , 1.2],
         "random_base_mass_shift_range":[-0.5 , 0.5], #质量偏移量
         "random_other_mass_shift_range":[-0.05, 0.05],  #质量偏移量
         "random_base_com_shift":0.1, #位置偏移量 xyz

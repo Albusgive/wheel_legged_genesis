@@ -2,6 +2,7 @@ import argparse
 import os
 import pickle
 import shutil
+import torch
 
 from wheel_legged_env import WheelLeggedEnv
 from rsl_rl.runners import OnPolicyRunner
@@ -82,7 +83,7 @@ def get_cfgs():
             "left_wheel_joint": 0.0,
             "right_wheel_joint": 0.0,
         },
-        "dof_names": [
+        "joint_names": [
             # "left_hip_joint",
             "left_thigh_joint",
             "left_calf_joint",
@@ -259,7 +260,6 @@ def main():
     args = parser.parse_args()
 
     gs.init(logging_level="warning",backend=gs.gpu)
-    gs.device="cuda:0"
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg, curriculum_cfg, domain_rand_cfg, terrain_cfg = get_cfgs()
     train_cfg = get_train_cfg(args.exp_name, args.max_iterations)
