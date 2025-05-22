@@ -1,1 +1,0 @@
-/usr/bin/clang++ -g CMakeFiles/mi_test.dir/mi_test.cpp.o CMakeFiles/mi_test.dir/src/DMMotor.cpp.o CMakeFiles/mi_test.dir/src/MiMotor.cpp.o CMakeFiles/mi_test.dir/src/PCAN.cpp.o CMakeFiles/mi_test.dir/src/RMMotor.cpp.o -o mi_test  -ludev -lpcanbasic 

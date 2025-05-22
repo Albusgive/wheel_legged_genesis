@@ -118,6 +118,7 @@ class WheelLeggedEnv:
                         file = self.env_cfg["urdf"],
                         pos = base_init_pos,
                         quat=self.base_init_quat.cpu().numpy(),
+                        convexify=True,
                     ),
                 )
             case "mjcf":

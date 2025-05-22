@@ -1,1 +1,0 @@
-/usr/bin/clang++ -g CMakeFiles/dm_test.dir/dm_test.cpp.o CMakeFiles/dm_test.dir/src/DMMotor.cpp.o CMakeFiles/dm_test.dir/src/MiMotor.cpp.o CMakeFiles/dm_test.dir/src/PCAN.cpp.o CMakeFiles/dm_test.dir/src/RMMotor.cpp.o -o dm_test  -ludev -lpcanbasic 

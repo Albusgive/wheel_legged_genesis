@@ -1,6 +1,0 @@
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/CMakeFiles/mi_test.dir
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/CMakeFiles/dm_test.dir
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/CMakeFiles/edit_cache.dir
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/CMakeFiles/rebuild_cache.dir
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/magic_enum/CMakeFiles/edit_cache.dir
-/home/albusgive2/wheel_legged_genesis/sim2real/motor_test/build/magic_enum/CMakeFiles/rebuild_cache.dir
