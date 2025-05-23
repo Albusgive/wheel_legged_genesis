@@ -59,59 +59,69 @@ def get_train_cfg(exp_name, max_iterations):
 
 def get_cfgs():
     env_cfg = {
-        "num_actions": 6,
-        "urdf":"assets/urdf/nz/urdf/nz.urdf",
-        "mjcf":"assets/mjcf/nz/nz_view.xml",
+        "num_actions": 8, #总关节数量
+        "urdf":"assets/urdf/CJ-003/urdf/CJ-003-wheelfoot.urdf",
+        "mjcf":"assets/mjcf/CJ-003/CJ-003-wheelfoot.xml",
         # joint names
         "default_joint_angles": {  # [rad]
-            # "left_hip_joint":0.0,
+            "left_hip_joint":0.0,
             "left_thigh_joint": 0.0,
             "left_calf_joint": 0.0,
-            # "right_hip_joint":0.0,
+            "right_hip_joint":0.0,
             "right_thigh_joint": 0.0,
             "right_calf_joint": 0.0,
             "left_wheel_joint": 0.0,
             "right_wheel_joint": 0.0,
         },
         "joint_init_angles": {  # [rad]
-            # "left_hip_joint":0.0,
+            "left_hip_joint":0.0,
             "left_thigh_joint": 0.6,
             "left_calf_joint": 0.0,
-            # "right_hip_joint":0.0,
+            "right_hip_joint":0.0,
             "right_thigh_joint": 0.6,
             "right_calf_joint": 0.0,
             "left_wheel_joint": 0.0,
             "right_wheel_joint": 0.0,
         },
         "joint_names": [
-            # "left_hip_joint",
+            "left_hip_joint",
             "left_thigh_joint",
             "left_calf_joint",
-            # "right_hip_joint",
+            "right_hip_joint",
             "right_thigh_joint",
             "right_calf_joint",
             "left_wheel_joint",
             "right_wheel_joint",
         ],
+        "joint_type": {  # joint/wheel
+            "left_hip_joint": "joint",
+            "left_thigh_joint": "joint",
+            "left_calf_joint": "joint",
+            "right_hip_joint": "joint",
+            "right_thigh_joint": "joint",
+            "right_calf_joint": "joint",
+            "left_wheel_joint": "wheel",
+            "right_wheel_joint": "wheel",
+        },
         # lower upper
         "dof_limit": {
-            # "left_hip_joint":[-0.31416, 0.31416],
-            "left_thigh_joint": [-0.436332313, 1.221730476],
-            "left_calf_joint": [0, 1.3],   #[0.0, 1.3963]
-            # "right_hip_joint":[-0.31416, 0.31416],
-            "right_thigh_joint": [-0.436332313, 1.221730476],
-            "right_calf_joint": [0, 1.3],
+            "left_hip_joint":[-0.31416, 0.31416],
+            "left_thigh_joint": [0, 1.57],
+            "left_calf_joint": [-2.0, 0],   #[0.0, 1.3963]
+            "right_hip_joint":[-0.31416, 0.31416],
+            "right_thigh_joint": [0, 1.57],
+            "right_calf_joint": [-2.0, 0],
             "left_wheel_joint": [0.0, 0.0],
             "right_wheel_joint": [0.0, 0.0],
         },
         "safe_force": {
-            # "left_hip_joint":23.6,
+            "left_hip_joint": 20.0,
             "left_thigh_joint": 20.0,
             "left_calf_joint": 20.0,
-            # "right_hip_joint":23.6,
+            "right_hip_joint": 20.0,
             "right_thigh_joint": 20.0,
             "right_calf_joint": 20.0,
-            "left_wheel_joint": 8.0, #给大点，测试的时候可以小
+            "left_wheel_joint": 8.0,
             "right_wheel_joint": 8.0,
         },
         # PD
@@ -129,17 +139,15 @@ def get_cfgs():
         "termination_if_base_connect_plane_than": True, #触地重置
         "connect_plane_links":[ #触地重置link
             "base_link",
-            "left_calf_link",
-            "left_thigh_link",
-            "left_knee_link",
-            "right_calf_link",
-            "right_thigh_link",
-            "right_knee_link",
+            "left_calf_Link",
+            "left_thigh_Link",
+            "right_calf_Link",
+            "right_thigh_Link",
                 ],
         # base pose
         "base_init_pos":{
-            "urdf":[0.0, 0.0, 0.2],#稍微高一点点
-            "mjcf":[0.0, 0.0, 0.285],
+            "urdf":[0.0, 0.0, 0.7],#稍微高一点点
+            "mjcf":[0.0, 0.0, 0.7],
             },
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],#0.996195, 0, 0.0871557, 0
         "episode_length_s": 20.0,
@@ -148,11 +156,13 @@ def get_cfgs():
         "wheel_action_scale": 10,
         "simulate_action_latency": True,
         "clip_actions": 100.0,
+        "convexify":True,   #是否启动凸优化网格
+        "decimate_aggressiveness":5,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
     }
     obs_cfg = {
         # num_obs = num_slice_obs + history_num * num_slice_obs
-        "num_obs": 156, #在rsl-rl中使用的变量为num_obs表示state数量
-        "num_slice_obs": 26,
+        "num_obs": 192, #在rsl-rl中使用的变量为num_obs表示state数量
+        "num_slice_obs": 32,
         "history_length": 5,
         "obs_scales": {
             "lin_vel": 2.0,
@@ -190,7 +200,6 @@ def get_cfgs():
             "dof_vel": -0.005,
             "dof_acc": -0.5e-9,
             "dof_force": -0.0001,
-            "knee_height": -0.0,    #相当有效，和similar_legged结合可以抑制劈岔和跪地重启，稳定运行
             "ang_vel_xy": -0.02,
             "collision": -0.0008,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
             # "terrain":0.1,

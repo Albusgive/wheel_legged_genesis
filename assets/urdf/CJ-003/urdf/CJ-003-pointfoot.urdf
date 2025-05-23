@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="CJ-003-wheelfoot">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.000956090713143542 -2.60410290767923E-05 -0.141363572462835"
+        rpy="0 0 0" />
+      <mass
+        value="2.9787993" />
+      <inertia
+        ixx="0.0305221"
+        ixy="0.0000023"
+        ixz="-0.0000408"
+        iyy="0.0090554"
+        iyz="-0.0000010"
+        izz="0.0231238" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="left_hip_Link">
+    <inertial>
+      <origin
+        xyz="-0.0532214791628154 0.000924619503632623 -3.861639154671E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.1161220" />
+      <inertia
+        ixx="0.0009754"
+        ixy="0.0000059"
+        ixz="-0.0000006"
+        iyy="0.0015883"
+        iyz="0.0000018"
+        izz="0.0011149" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_hip_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_hip_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_hip_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0301 0.08 -0.159"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_hip_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="left_thigh_Link">
+    <inertial>
+      <origin
+        xyz="-0.000961364581286359 0.0475914894303573 -0.03037352650229"
+        rpy="0 0 0" />
+      <mass
+        value="1.8330795" />
+      <inertia
+        ixx="0.0146993"
+        ixy="0.0000116"
+        ixz="0.0000155"
+        iyy="0.0148613"
+        iyz="0.0001904"
+        izz="0.0016331" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_thigh_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_thigh_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_thigh_joint"
+    type="continuous">
+    <origin
+      xyz="-0.059 0.0306 0"
+      rpy="0 0 0" />
+    <parent
+      link="left_hip_Link" />
+    <child
+      link="left_thigh_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="left_calf_Link">
+    <inertial>
+      <origin
+        xyz="0.0146820989379565 0.000189387958233284 -0.0832437152430494"
+        rpy="0 0 0" />
+      <mass
+        value="0.3504867" />
+      <inertia
+        ixx="0.0030398"
+        ixy="0.0000058"
+        ixz="0.0005050"
+        iyy="0.0032590"
+        iyz="-0.0000329"
+        izz="0.0002630" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_calf_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/left_calf_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_calf_joint"
+    type="continuous">
+    <origin
+      xyz="0 0.0489 -0.2"
+      rpy="0 0 0" />
+    <parent
+      link="left_thigh_Link" />
+    <child
+      link="left_calf_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="right_hip_Link">
+    <inertial>
+      <origin
+        xyz="-0.0532189397432775 -0.00117647536677837 3.83049136032515E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.1161220" />
+      <inertia
+        ixx="0.0009754"
+        ixy="-0.0000059"
+        ixz="0.0000006"
+        iyy="0.0015883"
+        iyz="-0.0000018"
+        izz="0.0011149" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_hip_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_hip_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_hip_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0301 -0.08 -0.159"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_hip_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="right_thigh_Link">
+    <inertial>
+      <origin
+        xyz="-9.18182511895765E-05 -0.0473042683771448 -0.0238391998276769"
+        rpy="0 0 0" />
+      <mass
+        value="1.8330795" />
+      <inertia
+        ixx="0.0146993"
+        ixy="-0.0000390"
+        ixz="-0.0000365"
+        iyy="0.0148625"
+        iyz="-0.0001904"
+        izz="0.0016343" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_thigh_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_thigh_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_thigh_joint"
+    type="continuous">
+    <origin
+      xyz="-0.059 -0.0306 0"
+      rpy="0 0 0" />
+    <parent
+      link="right_hip_Link" />
+    <child
+      link="right_thigh_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="right_calf_Link">
+    <inertial>
+      <origin
+        xyz="0.0146743673886303 -0.000189387958234311 -0.0832450785238953"
+        rpy="0 0 0" />
+      <mass
+        value="0.3504867" />
+      <inertia
+        ixx="0.0030396"
+        ixy="-0.0000058"
+        ixz="0.0005056"
+        iyy="0.0032590"
+        iyz="0.0000329"
+        izz="0.0002632" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_calf_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/right_calf_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_calf_joint"
+    type="continuous">
+    <origin
+      xyz="0 -0.0489 -0.2"
+      rpy="0 0 0" />
+    <parent
+      link="right_thigh_Link" />
+    <child
+      link="right_calf_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+</robot>
