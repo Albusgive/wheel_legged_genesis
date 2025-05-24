@@ -180,9 +180,11 @@ class WheelLeggedEnv:
         stiffness = np.full((self.num_envs,self.robot.n_dofs), self.env_cfg["stiffness"])
         stiffness[:,:6] = 0
         stiffness[:,self.wheel_dof_idx_np] = 0
-        self.stiffness = self.domain_rand_cfg["dof_stiffness_descent"][0]
-        self.stiffness_max = self.domain_rand_cfg["dof_stiffness_descent"][0]
-        self.stiffness_end = self.domain_rand_cfg["dof_stiffness_descent"][1]
+        self.stiffness = self.curriculum_cfg["dof_stiffness_descent"][0]
+        self.stiffness_max = self.curriculum_cfg["dof_stiffness_descent"][0]
+        self.stiffness_min = self.curriculum_cfg["dof_stiffness_descent"][1]
+        self.stiffness_step = self.curriculum_cfg["dof_stiffness_descent"][2]*(self.stiffness_max - self.stiffness_min)
+        self.stiffness_threshold = self.curriculum_cfg["dof_stiffness_descent"][3]
         self.robot.set_dofs_stiffness(stiffness, np.arange(0,self.robot.n_dofs))
         # from IPython import embed; embed()
         armature = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["armature"])
@@ -569,7 +571,7 @@ class WheelLeggedEnv:
 
         #damping下降
         if self.is_damping_descent:
-            if self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]*self.stiffness_end/self.dt) > self.damping_threshold:
+            if self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]/self.dt) > self.damping_threshold:
                 self.damping_base -= self.damping_step
                 if self.damping_base < self.damping_min:
                     self.damping_base = self.damping_min
@@ -583,26 +585,26 @@ class WheelLeggedEnv:
                                    dofs_idx_local=np.arange(0, self.robot.n_dofs), 
                                    envs_idx=envs_idx)
 
-        if(self.is_stiffness):
-            stiffness = (self.dof_stiffness_low+self.dof_stiffness_range * torch.rand(len(envs_idx), self.robot.n_dofs))
-            stiffness[:,self.robot.n_dofs-6:] = 0
-            stiffness[:,self.wheel_dof_idx_np] = 0
-            self.robot.set_dofs_stiffness(stiffness=stiffness, 
-                                       dofs_idx_local=np.arange(0, self.robot.n_dofs), 
-                                       envs_idx=envs_idx)
-        else:
-            #刚度下降
-            stiffness_ratio = 1 - (self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]
-                                                                          *self.stiffness_end/self.dt))
-            if stiffness_ratio < 0:
-                stiffness_ratio = 0
-            self.stiffness = stiffness_ratio*self.stiffness_max
-            stiffness = torch.full((len(envs_idx), self.robot.n_dofs),self.stiffness)
-            stiffness[:,self.robot.n_dofs-6:] = 0
-            stiffness[:,self.wheel_dof_idx_np] = 0
-            self.robot.set_dofs_stiffness(stiffness=stiffness, 
-                                       dofs_idx_local=np.arange(0, self.robot.n_dofs), 
-                                       envs_idx=envs_idx)
+        # if(self.is_stiffness):
+        #     stiffness = (self.dof_stiffness_low+self.dof_stiffness_range * torch.rand(len(envs_idx), self.robot.n_dofs))
+        #     stiffness[:,self.robot.n_dofs-6:] = 0
+        #     stiffness[:,self.wheel_dof_idx_np] = 0
+        #     self.robot.set_dofs_stiffness(stiffness=stiffness, 
+        #                                dofs_idx_local=np.arange(0, self.robot.n_dofs), 
+        #                                envs_idx=envs_idx)
+        # else:
+        #     #刚度下降
+        #     stiffness_ratio = 1 - (self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]
+        #                                                                   *self.stiffness_end/self.dt))
+        #     if stiffness_ratio < 0:
+        #         stiffness_ratio = 0
+        #     self.stiffness = stiffness_ratio*self.stiffness_max
+        #     stiffness = torch.full((len(envs_idx), self.robot.n_dofs),self.stiffness)
+        #     stiffness[:,self.robot.n_dofs-6:] = 0
+        #     stiffness[:,self.wheel_dof_idx_np] = 0
+        #     self.robot.set_dofs_stiffness(stiffness=stiffness, 
+        #                                dofs_idx_local=np.arange(0, self.robot.n_dofs), 
+        #                                envs_idx=envs_idx)
 
         armature = (self.dof_armature_low+self.dof_armature_range * torch.rand(len(envs_idx), self.robot.n_dofs))
         armature[:,:6] = 0
@@ -740,8 +742,8 @@ class WheelLeggedEnv:
         #使用e^(-x^2)效果不是很好
         projected_gravity_error = 1 + self.projected_gravity[:, 2] #[0, 0.2]
         projected_gravity_error = torch.square(projected_gravity_error)
-        # projected_gravity_error = torch.square(self.projected_gravity[:,2])
         return torch.exp(-projected_gravity_error / self.reward_cfg["tracking_gravity_sigma"])
+        # projected_gravity_error = torch.square(self.projected_gravity[:,2])
         # return torch.sum(projected_gravity_error)
 
     def _reward_similar_legged(self):
@@ -771,6 +773,9 @@ class WheelLeggedEnv:
         for idx in self.reset_links:
             collision += torch.square(self.connect_force[:,idx,:]).sum(dim=1)
         return collision
+    
+    def _reward_hip_dafault(self):
+        return torch.sum(torch.square(self.dof_pos[:,[0,3]] - self.default_dof_pos[:,[0,3]]), dim=1)
 
     # def _reward_terrain(self):
     #     # extra_lin_vel = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]),dim=1)

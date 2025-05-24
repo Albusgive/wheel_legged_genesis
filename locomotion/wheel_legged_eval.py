@@ -21,7 +21,6 @@ def main():
     parser.add_argument("--ckpt", type=int, default=7300)
     args = parser.parse_args()
     
-
     gs.init(backend=gs.gpu,logging_level="warning")
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg, curriculum_cfg, domain_rand_cfg, terrain_cfg, train_cfg = pickle.load(open(f"logs/{args.exp_name}/cfgs.pkl", "rb"))
@@ -71,6 +70,7 @@ def main():
             actions = loaded_policy(obs)
             obs, _, rews, dones, infos = env.step(actions)
             comands,reset_flag = pad.get_commands()
+            print(f"comands: {comands}")
             env.set_commands(0,comands)
             if reset_flag:
                 env.reset()

@@ -32,8 +32,8 @@ plane = scene.add_entity(
 )
 
 robot = scene.add_entity(
-    gs.morphs.URDF(file="assets/urdf/point_foot2/urdf/point_foot2.urdf",
-    pos=(0.0, 0.0, 0.65),
+    gs.morphs.URDF(file="assets/urdf/CJ-003/urdf/CJ-003-wheelfoot.urdf",
+    pos=(0.0, 0.0, 0.7),
     quat=(1, 0, 0, 0)
     ),
     # gs.morphs.MJCF(file="assets/mjcf/point_foot2/point_foot2.xml",
@@ -108,7 +108,7 @@ while True:
     #     links_idx=[1,],
     # )
     robot.control_dofs_position(
-            np.array([0.3, -0.3, -0.6, -0.3, 0.3, 0.0]),
+            np.array([0.3, 1.57, -2.0, -0.3, 0.0, 2.0]),
             dofs_idx,
         )
     scene.step()
