@@ -183,26 +183,26 @@ def get_cfgs():
     # 名字和奖励函数名一一对应
     reward_cfg = {
         "tracking_lin_sigma": 0.25, 
-        "tracking_ang_sigma": 0.5, 
-        "tracking_height_sigma": 0.001,
+        "tracking_ang_sigma": 0.25, 
+        "tracking_height_sigma": 0.05,
         "tracking_similar_legged_sigma": 0.05,
-        "tracking_gravity_sigma": 0.01,
+        "tracking_gravity_sigma": 0.001,
         "reward_scales": {
-            "tracking_lin_vel": 2.0,
+            "tracking_lin_vel": 3.0,
             "tracking_ang_vel": 2.0,
-            "tracking_base_height": 5.0,    #和similar_legged对抗，similar_legged先提升会促进此项
-            "lin_vel_z": -1.0, #大了影响高度变换速度
+            "tracking_base_height": 8.0,    #和similar_legged对抗，similar_legged先提升会促进此项
+            "lin_vel_z": -0.2, #大了影响高度变换速度
             "joint_action_rate": -0.005,
             "wheel_action_rate": -0.002,
             "similar_to_default": 0.0,
-            "projected_gravity": 5.0,
-            "similar_legged": 1.0,  #tracking_base_height和knee_height对抗
+            "projected_gravity": 6.0,
+            "similar_legged": 0.8,  #tracking_base_height和knee_height对抗
             "dof_vel": -0.005,
             "dof_acc": -0.5e-10,
             "dof_force": -0.0001,
             "ang_vel_xy": -0.02,
             "collision": -0.0002,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
-            "hip_dafault": -1.0,
+            "hip_dafault": -10.0,
             # "terrain":0.1,
         },
     }
@@ -221,13 +221,13 @@ def get_cfgs():
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.008,   #比例
-        "curriculum_ang_vel_step":0.0003,   #比例
-        "curriculum_height_target_step":0.0003,   #高度
+        "curriculum_lin_vel_step":0.02,   #比例
+        "curriculum_ang_vel_step":0.003,   #比例
+        "curriculum_height_target_step":0.003,   #高度
         "curriculum_lin_vel_min_range":0.3,   #比例
         "curriculum_ang_vel_min_range":0.3,   #比例
-        "lin_vel_err_range":[0.05,0.5],  #课程误差阈值
-        "ang_vel_err_range":[0.25,0.5],  #课程误差阈值 连续曲线>方波>不波动
+        "lin_vel_err_range":[0.05,0.35],  #课程误差阈值
+        "ang_vel_err_range":[0.25,0.35],  #课程误差阈值 连续曲线>方波>不波动
         "damping_descent":False,
         "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
         "dof_stiffness_descent":[0.8 , 0.2, 0.001, 0.4], #刚度下降[stiffness_max,stiffness_min,stiffness_step（比例）,damping_threshold（存活步数比例）]，和域随机化冲突，二选一
