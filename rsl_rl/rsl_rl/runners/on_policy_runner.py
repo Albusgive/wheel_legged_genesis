@@ -174,9 +174,8 @@ class OnPolicyRunner:
         self.writer.add_scalar('Perf/learning_time', locs['learn_time'], locs['it'])
         self.writer.add_scalar('Curriculum/mean_lin_vel_range', self.env.command_ranges[:,0,1].mean(), locs['it'])
         self.writer.add_scalar('Curriculum/mean_ang_vel_range', self.env.command_ranges[:,2,1].mean(), locs['it'])
-        self.writer.add_scalar('Curriculum/mean_min_height_range', self.env.command_ranges[:,3,0].mean(), locs['it'])
+        # self.writer.add_scalar('Curriculum/mean_min_height_range', self.env.command_ranges[:,3,0].mean(), locs['it'])
         self.writer.add_scalar('Curriculum/terrain_scale', self.env.terrain_buf.float().mean(), locs['it'])
-        self.writer.add_scalar('Curriculum/stiffness', self.env.stiffness, locs['it'])
         self.writer.add_scalar('Curriculum/damping_base', self.env.damping_base, locs['it'])
         if len(locs['rewbuffer']) > 0:
             self.writer.add_scalar('Train/mean_reward', statistics.mean(locs['rewbuffer']), locs['it'])
@@ -213,9 +212,8 @@ class OnPolicyRunner:
         log_string += (f"""{'#' * width}\n"""
                           f"""{'mean_lin_vel_range:':>{pad}} {self.env.command_ranges[:,0,1].mean()}\n"""
                           f"""{'mean_ang_vel_range:':>{pad}} {self.env.command_ranges[:,2,1].mean()}\n"""
-                          f"""{'mean_min_height_range:':>{pad}} {self.env.command_ranges[:,3,0].mean()}\n"""
+                        #   f"""{'mean_min_height_range:':>{pad}} {self.env.command_ranges[:,3,0].mean()}\n"""
                           f"""{'terrain_scale:':>{pad}} {self.env.terrain_buf.float().mean()}\n"""
-                          f"""{'stiffness:':>{pad}} {self.env.stiffness}\n"""
                           f"""{'damping_base:':>{pad}} {self.env.damping_base}\n"""
                           )
         log_string += (f"""{'-' * width}\n"""

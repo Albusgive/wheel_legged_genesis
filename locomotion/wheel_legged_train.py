@@ -75,10 +75,10 @@ def get_cfgs():
         },
         "joint_init_angles": {  # [rad]
             "left_hip_joint":0.0,
-            "left_thigh_joint": 0.6,
+            "left_thigh_joint": 0.0,
             "left_calf_joint": 0.0,
             "right_hip_joint":0.0,
-            "right_thigh_joint": 0.6,
+            "right_thigh_joint": 0.0,
             "right_calf_joint": 0.0,
             "left_wheel_joint": 0.0,
             "right_wheel_joint": 0.0,
@@ -115,19 +115,19 @@ def get_cfgs():
             "right_wheel_joint": [0.0, 0.0],
         },
         "safe_force": {
-            "left_hip_joint": 20.0,
-            "left_thigh_joint": 20.0,
-            "left_calf_joint": 20.0,
-            "right_hip_joint": 20.0,
-            "right_thigh_joint": 20.0,
-            "right_calf_joint": 20.0,
+            "left_hip_joint": 28.0,
+            "left_thigh_joint": 28.0,
+            "left_calf_joint": 28.0,
+            "right_hip_joint": 28.0,
+            "right_thigh_joint": 28.0,
+            "right_calf_joint": 28.0,
             "left_wheel_joint": 6.0,
             "right_wheel_joint": 6.0,
         },
         # PD
-        "joint_kp": 20.0,
-        "joint_kv": 0.5,
-        "wheel_kv": 1.0,
+        "joint_kp": 40.0,
+        "joint_kv": 0.75,
+        "wheel_kv": 5.0,
         "damping": 0.01,
         "stiffness":0.0, #不包含轮
         "armature":0.002,
@@ -157,7 +157,7 @@ def get_cfgs():
         "simulate_action_latency": True,
         "clip_actions": 100.0,
         "convexify":True,   #是否启动凸优化网格
-        "decimate_aggressiveness": 5,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
+        "decimate_aggressiveness": 4,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
     }
     obs_cfg = {
         # num_obs = num_slice_obs + history_num * num_slice_obs
@@ -182,37 +182,39 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "tracking_lin_sigma": 0.25, 
-        "tracking_ang_sigma": 0.25, 
+        "tracking_linx_sigma": 0.4, 
+        "tracking_liny_sigma": 0.005, 
+        "tracking_ang_sigma": 0.8, 
         "tracking_height_sigma": 0.05,
-        "tracking_similar_legged_sigma": 0.05,
-        "tracking_gravity_sigma": 0.001,
+        "tracking_similar_legged_sigma": 0.01,
+        "tracking_gravity_sigma": 0.005,
         "reward_scales": {
-            "tracking_lin_vel": 3.0,
-            "tracking_ang_vel": 2.0,
-            "tracking_base_height": 8.0,    #和similar_legged对抗，similar_legged先提升会促进此项
-            "lin_vel_z": -0.2, #大了影响高度变换速度
+            "tracking_lin_x_vel": 1.0,
+            "tracking_lin_y_vel": 1.0,
+            "tracking_ang_vel": 1.0,
+            "tracking_base_height": -10.0,   #身高/膝关节
+            "lin_vel_z": -0.02, #大了影响高度变换速度
             "joint_action_rate": -0.005,
             "wheel_action_rate": -0.002,
-            "similar_to_default": 0.0,
-            "projected_gravity": 6.0,
-            "similar_legged": 0.8,  #tracking_base_height和knee_height对抗
-            "dof_vel": -0.005,
-            "dof_acc": -0.5e-10,
-            "dof_force": -0.0001,
+            # "similar_to_default": 0.0,
+            "projected_gravity": 4.0,
+            "similar_legged": 1.0,  #不带hip
+            "joint_vel": -0.001,
+            "dof_acc": -2e-7,
+            "dof_force": -1e-6,
             "ang_vel_xy": -0.02,
-            "collision": -0.0002,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
-            "hip_dafault": -10.0,
+            "collision": -0.00015,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
+            "hip_dafault": -3.0,
             # "terrain":0.1,
         },
     }
     command_cfg = {
         "num_commands": 4,
         "base_range": 0.3,  #基础范围
-        "lin_vel_x_range": [-1.0, 1.0], #修改范围要调整奖励权重
-        "lin_vel_y_range": [-0.15, 0.15],
+        "lin_vel_x_range": [-1.3, 1.3], #修改范围要调整奖励权重
+        "lin_vel_y_range": [-0.2, 0.2],
         "ang_vel_range": [-6.28, 6.28],   #修改范围要调整奖励权重
-        "height_target_range": [0.4, 0.6],   #lower会导致跪地
+        "height_target_range": [-0.8, 0.0],   #lower会导致跪地 [0.45, 0.65]
         #旋转和线速度范围会互冲，所以下面参数是降低互冲的（大概就行，轮不能完全代表整机），纯腿的用不上这个
         "limit_cmd_random":False,
         "wheel_spacing":0.37, #轮间距 m
@@ -221,13 +223,13 @@ def get_cfgs():
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.02,   #比例
+        "curriculum_lin_vel_step":0.03,   #比例
         "curriculum_ang_vel_step":0.003,   #比例
-        "curriculum_height_target_step":0.003,   #高度
+        # "curriculum_height_target_step":0.003,   #高度
         "curriculum_lin_vel_min_range":0.3,   #比例
-        "curriculum_ang_vel_min_range":0.3,   #比例
-        "lin_vel_err_range":[0.05,0.35],  #课程误差阈值
-        "ang_vel_err_range":[0.25,0.35],  #课程误差阈值 连续曲线>方波>不波动
+        "curriculum_ang_vel_min_range":0.1,   #比例
+        "lin_vel_err_range":[0.1,0.5],  #课程误差阈值
+        "ang_vel_err_range":[0.3,0.5],  #课程误差阈值 连续曲线>方波>不波动
         "damping_descent":False,
         "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
         "dof_stiffness_descent":[0.8 , 0.2, 0.001, 0.4], #刚度下降[stiffness_max,stiffness_min,stiffness_step（比例）,damping_threshold（存活步数比例）]，和域随机化冲突，二选一
