@@ -157,7 +157,7 @@ def get_cfgs():
         "simulate_action_latency": True,
         "clip_actions": 100.0,
         "convexify":True,   #是否启动凸优化网格
-        "decimate_aggressiveness": 4,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
+        "decimate_aggressiveness": 5,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
     }
     obs_cfg = {
         # num_obs = num_slice_obs + history_num * num_slice_obs
