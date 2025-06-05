@@ -68,26 +68,26 @@ for solver in scene.sim.solvers:
         continue
     rigid_solver = solver
 
-jnt_names = [
-    "left_hip_joint",
-    "left_thigh_joint",
-    "left_calf_joint",
-    "right_hip_joint",
-    "right_thigh_joint",
-    "right_calf_joint",
-    "left_wheel_joint",
-    "right_wheel_joint",
-]
-dofs_idx = [robot.get_joint(name).dof_idx_local for name in jnt_names]
-robot.set_dofs_kp(
-    kp = np.array([30,30,30,30,30,30,30,30]),
-    dofs_idx_local = dofs_idx,
-)
-robot.set_dofs_kv(
-    kv = np.array([1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2]),
-    dofs_idx_local = dofs_idx,
-)
-left_knee = robot.get_joint("left_calf_joint")
+# jnt_names = [
+#     "left_hip_joint",
+#     "left_thigh_joint",
+#     "left_calf_joint",
+#     "right_hip_joint",
+#     "right_thigh_joint",
+#     "right_calf_joint",
+#     "left_wheel_joint",
+#     "right_wheel_joint",
+# ]
+# dofs_idx = [robot.get_joint(name).dof_idx_local for name in jnt_names]
+# robot.set_dofs_kp(
+#     kp = np.array([30,30,30,30,30,30,30,30]),
+#     dofs_idx_local = dofs_idx,
+# )
+# robot.set_dofs_kv(
+#     kv = np.array([1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2]),
+#     dofs_idx_local = dofs_idx,
+# )
+# left_knee = robot.get_joint("left_calf_joint")
 
 # print(robot.n_links)
 # link = robot.get_link("left_calf_Link")
@@ -109,10 +109,10 @@ while True:
     #     force=force,
     #     links_idx=[1,],
     # )
-    robot.control_dofs_position(
-            np.array([0.3, 1.57, -2.0, -0.3, 1.57, -2.0 ,0 ,0]),
-            dofs_idx,
-        )
+    # robot.control_dofs_position(
+    #         np.array([0.3, 1.57, -2.0, -0.3, 1.57, -2.0 ,0 ,0]),
+    #         dofs_idx,
+    #     )
     scene.step()
     # print(robot.get_pos())
     # left_knee_pos = left_knee.get_pos()

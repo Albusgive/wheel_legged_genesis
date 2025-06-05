@@ -12,7 +12,7 @@ def gs_rand_float(lower, upper, shape, device):
     
 class WheelLeggedEnv:
     def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, curriculum_cfg, 
-                 domain_rand_cfg, terrain_cfg, robot_morphs="urdf", show_viewer=False, device="cuda", train_mode=True):
+                 domain_rand_cfg, terrain_cfg, robot_morphs="urdf", show_viewer=False, num_view = 1, device="cuda", train_mode=True):
         self.device = torch.device(device)
 
         self.mode = train_mode   #True训练模式开启
@@ -45,14 +45,14 @@ class WheelLeggedEnv:
 
         # create scene
         self.scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=5),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
                 camera_lookat=(0.0, 0.0, 0.5),
                 camera_fov=40,
             ),
-            vis_options=gs.options.VisOptions(rendered_envs_idx=list(range(1))),
+            vis_options=gs.options.VisOptions(rendered_envs_idx=list(range(num_view))),
             rigid_options=gs.options.RigidOptions(
                 dt=self.dt,
                 constraint_solver=gs.constraint_solver.Newton,
@@ -178,11 +178,12 @@ class WheelLeggedEnv:
         self.robot.set_dofs_damping(damping, np.arange(0,self.robot.n_dofs))
         
         # from IPython import embed; embed()
+        # print(self.scene.sim.rigid_solver.dofs_info.damping.to_numpy())
+        # print(self.scene.sim.rigid_solver.dofs_info.stiffness.to_numpy())
         armature = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["armature"])
         armature[:,:6] = 0
         self.robot.set_dofs_armature(armature, np.arange(0, self.robot.n_dofs))
         
-
         #dof limits
         lower = [self.env_cfg["dof_limit"][name][0] for name in self.env_cfg["joint_names"]]
         upper = [self.env_cfg["dof_limit"][name][1] for name in self.env_cfg["joint_names"]]
@@ -275,6 +276,15 @@ class WheelLeggedEnv:
         #跪地重启   注意是idx_local不需要减去base_idx
         if(self.env_cfg["termination_if_base_connect_plane_than"]&self.mode):
             self.reset_links = [(self.robot.get_link(name).idx_local) for name in self.env_cfg["connect_plane_links"]]
+        #足端位置
+        self.left_foot = self.robot.get_link(self.env_cfg["foot_link"][0])
+        self.right_foot = self.robot.get_link(self.env_cfg["foot_link"][1])
+        self.left_foot_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
+        self.right_foot_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
+        self.left_foot_pos[:] = self.left_foot.get_pos()
+        self.right_foot_pos[:] = self.right_foot.get_pos()
+        self.left_foot_base_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
+        self.right_foot_base_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
             
         #域随机化 domain_rand_cfg
         self.friction_ratio_low = self.domain_rand_cfg["friction_ratio_range"][0]
@@ -351,7 +361,9 @@ class WheelLeggedEnv:
         # print("base z",self.base_pos[:2])
         self.base_quat[:] = self.robot.get_quat()
         self.base_euler = quat_to_xyz(
-            transform_quat_by_quat(torch.ones_like(self.base_quat) * self.inv_base_init_quat, self.base_quat)
+            transform_quat_by_quat(torch.ones_like(self.base_quat) * self.inv_base_init_quat, self.base_quat),
+            rpy=True,
+            degrees=True,
         )
         inv_base_quat = inv_quat(self.base_quat)
         self.base_lin_vel[:] = transform_by_quat(self.robot.get_vel(), inv_base_quat)
@@ -362,6 +374,11 @@ class WheelLeggedEnv:
         self.dof_pos[:] = self.robot.get_dofs_position(self.motors_dof_idx) 
         self.dof_vel[:] = self.robot.get_dofs_velocity(self.motors_dof_idx) 
         self.dof_force[:] = self.robot.get_dofs_force(self.motors_dof_idx)
+        self.left_foot_pos[:] = self.left_foot.get_pos()
+        self.right_foot_pos[:] = self.right_foot.get_pos()
+        self.left_foot_base_pos[:] = transform_by_quat(self.left_foot_pos, inv_base_quat) + self.base_pos
+        self.right_foot_base_pos[:] = transform_by_quat(self.right_foot_pos, inv_base_quat) + self.base_pos
+
         # print("dof_force:",self.dof_force)
         if self.noise["use"]:
             self.base_ang_vel[:] += torch.randn_like(self.base_ang_vel) * self.noise["ang_vel"][0] + (torch.rand_like(self.base_ang_vel)*2-1) * self.noise["ang_vel"][1]
@@ -388,6 +405,7 @@ class WheelLeggedEnv:
 
         # check terrain_buf
         # 线速度达到预设的90%范围，角速度达到90%以上去其他地形(建议高一点)
+        self.terrain_buf[:] = 0
         self.terrain_buf = self.command_ranges[:, 0, 1] > self.command_cfg["lin_vel_x_range"][1] * 0.9
         self.terrain_buf &= self.command_ranges[:, 2, 1] > self.command_cfg["ang_vel_range"][1] * 0.9
         #固定一部分去地形
@@ -716,9 +734,20 @@ class WheelLeggedEnv:
         # base_height_error = torch.square(self.base_pos[:, 2] - self.commands[:, 3])
         # return torch.exp(-base_height_error / self.reward_cfg["tracking_height_sigma"])
         # 膝关节跟踪 建议用二次函数
-        knee_error = torch.square((self.dof_pos[:,2]+self.dof_pos[:,5]/2) - self.commands[:, 3])
+        # knee_error = torch.square(self.dof_pos[:, [2, 5]] - self.commands[:, 3].unsqueeze(1)).sum(dim=1)
+        # return torch.exp(-knee_error / self.reward_cfg["tracking_height_sigma"])
+        # return knee_error
+        # 髋关节跟踪 建议用二次函数
+        knee_error = torch.square(self.dof_pos[:, [1, 4]] - self.commands[:, 3].unsqueeze(1)).sum(dim=1)
         # return torch.exp(-knee_error / self.reward_cfg["tracking_height_sigma"])
         return knee_error
+        # 脚据base距离
+        # base_height_error = torch.abs(self.left_foot_base_pos[:, 2] - self.commands[:, 3]) 
+        # + torch.abs(self.right_foot_base_pos[:, 2] - self.commands[:, 3])
+        # base_height_error = torch.square(base_height_error)
+        # print("base_height_error: ", base_height_error)
+        # return torch.exp(-base_height_error / self.reward_cfg["tracking_height_sigma"])
+        # return base_height_error
 
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
@@ -740,12 +769,13 @@ class WheelLeggedEnv:
     def _reward_projected_gravity(self):
         #保持水平奖励使用重力投影 0 0 -1
         #使用e^(-x^2)效果不是很好
-        projected_gravity_error = 1 + self.projected_gravity[:, 2] #[0, 0.2]
-        projected_gravity_error = torch.square(projected_gravity_error)
+        # projected_gravity_error = 1 + self.projected_gravity[:, 2] #[0, 0.2]
+        # projected_gravity_error = torch.square(projected_gravity_error)
         # projected_gravity_error = torch.abs(torch.pow(projected_gravity_error,3))
-        return torch.exp(-projected_gravity_error / self.reward_cfg["tracking_gravity_sigma"])
-        # projected_gravity_error = torch.square(self.projected_gravity[:,2])
-        # return torch.sum(projected_gravity_error)
+        # return torch.exp(-projected_gravity_error / self.reward_cfg["tracking_gravity_sigma"])
+        reward = torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
+        # reward = torch.sum(torch.abs(torch.pow(self.projected_gravity[:, :2], 3)), dim=1)
+        return reward
 
     def _reward_similar_legged(self):
         # 两侧腿相似 适合使用轮子行走 抑制劈岔
@@ -785,5 +815,16 @@ class WheelLeggedEnv:
     #     # extra_terrain_rew = torch.exp(-extra_lin_vel / self.reward_cfg["tracking_lin_sigma"]) 
     #     # + torch.exp(-extra_ang_vel / self.reward_cfg["tracking_ang_sigma"])
     #     # return extra_terrain_rew
-        
     #     return self.terrain_buf
+    
+    def _reward_feet_distance(self):
+        # 两腿间距
+        feet_distance = torch.norm(self.left_foot_pos - self.right_foot_pos, dim=-1)
+        reward = torch.clip(self.reward_cfg["feet_distance"][0] - feet_distance, 0, 1) + \
+                 torch.clip(feet_distance - self.reward_cfg["feet_distance"][1], 0, 1)
+        return reward
+    
+    def _reward_survive(self):
+        # 存活的给奖励 return / episode_length = reward(显示)
+        return torch.ones(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
+    
