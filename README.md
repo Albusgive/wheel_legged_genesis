@@ -61,8 +61,10 @@ train:
 |---|--------|
 |LY|lin_vel|
 |RX|ang_vel|
-|LT|height_up|
-|RT|height_down|
+|LT|leg_length_up|
+|RT|leg_length_down|
+|LB|left_leg_length_ctrl_flag|
+|RB|right_leg_length_ctrl_flag|
 |X|Reset|
 
 **keyboard**
@@ -76,6 +78,8 @@ train:
 |E|右转 (TURN Right)|
 |Space|站立 (up)|
 |C/Left_Ctrl|下蹲 (down)|
+|1|left_leg_length_ctrl_flag(仅左腿)|
+|2|right_leg_length_ctrl_flag(仅右腿)|
 |Shift|静步(Quiet Walking)|
 |R|重置环境(Reset)|
 ## Terrain

@@ -105,37 +105,35 @@ def get_cfgs():
         },
         # lower upper
         "dof_limit": {
-            "left_hip_joint":[-0.31416, 0.31416],
+            "left_hip_joint":[-0.31416, 1.0],
             "left_thigh_joint": [0.0, 1.57],
             "left_calf_joint": [-2.0, 0.0],   
-            "right_hip_joint":[-0.31416, 0.31416],
+            "right_hip_joint":[-1.0, 0.31416],
             "right_thigh_joint": [0.0, 1.57],
             "right_calf_joint": [-2.0, 0.0],
             "left_wheel_joint": [0.0, 0.0],
             "right_wheel_joint": [0.0, 0.0],
         },
         "safe_force": {
-            "left_hip_joint": 28.0,
-            "left_thigh_joint": 28.0,
-            "left_calf_joint": 28.0,
-            "right_hip_joint": 28.0,
-            "right_thigh_joint": 28.0,
-            "right_calf_joint": 28.0,
+            "left_hip_joint": 25.0,
+            "left_thigh_joint": 25.0,
+            "left_calf_joint": 25.0,
+            "right_hip_joint": 25.0,
+            "right_thigh_joint": 25.0,
+            "right_calf_joint": 25.0,
             "left_wheel_joint": 6.0,
             "right_wheel_joint": 6.0,
         },
         # PD
         "joint_kp": 30.0,
-        "joint_kv": 1.0,
-        "wheel_kv": 0.8,
+        "joint_kv": 0.8,
+        "wheel_kv": 1.0,
         "damping": 0.01,
-        "stiffness":0.0, #不包含轮
+        # "stiffness":0.0, #不包含轮
         "armature":0.002,
         # termination 角度制    obs的angv弧度制
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 25, #15度以内都摆烂，会导致episode太短难以学习
-        # "termination_if_base_height_greater_than": 0.1,
-        # "termination_if_knee_height_greater_than": 0.00,
         "termination_if_base_connect_plane_than": True, #触地重置
         "connect_plane_links":[ #触地重置link
             "base_link",
@@ -164,16 +162,15 @@ def get_cfgs():
         "decimate_aggressiveness": 4,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
     }
     obs_cfg = {
-        # num_obs = num_slice_obs + history_length * num_slice_obs
-        "num_obs": 320, #在rsl-rl中使用的变量为num_obs表示state数量
-        "num_slice_obs": 32,
+        # num_obs = num_slice_obs + history_length * num_slice_obs + num_commands
+        "num_obs": 286, #在rsl-rl中使用的变量为num_obs表示state数量
+        "num_slice_obs": 28,
         "history_length": 9,
         "obs_scales": {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
-            "height_measurements": 5.0,
         },
         "noise":{
             "use": True,
@@ -192,66 +189,60 @@ def get_cfgs():
         "tracking_height_sigma": 0.005,  
         "tracking_similar_legged_sigma": 0.01,  
         # "tracking_gravity_sigma": 0.01,
-        "feet_distance":[0.3, 0.45], #脚间距范围 m
+        "feet_distance":[0.3, 0.8], #脚间距范围 m
         "reward_scales": {
             "tracking_lin_x_vel": 1.5,
             "tracking_lin_y_vel": 0.0,
             "tracking_ang_vel": 1.0,
-            "tracking_base_height": -8.0,   #身高/膝关节/髋关节(thigh)/足端到base
+            "tracking_leg_length": -8.0,   #身高/膝关节/髋关节(thigh)/足端到base
             "lin_vel_z": -0.02, #大了影响高度变换速度
             "joint_action_rate": -0.02,
             "wheel_action_rate": -0.01,
             # "similar_to_default": 0.0,
             "projected_gravity": -12.0,   
-            "similar_legged": 0.2,  #不带hip
+            "similar_legged": 0.0,  #不带hip
             # "joint_vel": -0.001,
             "dof_acc": -1e-7,
             "dof_force": -1e-6,
             "ang_vel_xy": -0.02,
             "collision": -0.00015,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
-            "hip_dafault": -0.0,
             # "terrain":0.1,
             "feet_distance": -100.0,
             "survive": 1.0,
+            "tsk": -6.0,
         },
     }
     command_cfg = {
-        "num_commands": 4,
-        "base_range": 0.3,  #基础范围
+        "num_commands": 6,
+        "base_range": 0.3,  #速度控制基础范围
         "lin_vel_x_range": [-1.2, 1.2], #修改范围要调整奖励权重
-        "lin_vel_y_range": [-0.2, 0.2], 
+        "lin_vel_y_range": [-0.0, 0.0], 
         "ang_vel_range": [-6.28, 6.28],   #修改范围要调整奖励权重
-        "height_target_range": [0.0, 1.0],   #lower会导致跪地 [0.45, 0.65] [0.45, 0.58]
-        #旋转和线速度范围会互冲，所以下面参数是降低互冲的（大概就行，轮不能完全代表整机），纯腿的用不上这个
-        "limit_cmd_random":False,
-        "wheel_spacing":0.37, #轮间距 m
-        "wheel_radius":0.75, #轮半径 m
-        "wheel_max_w":20, #轮最大转速 rad/s
+        "leg_length_range": [0.0, 1.0],   #两条腿
+        "tsk_range": [-0.3, 0.3],   #左右
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.01,   #比例
-        "curriculum_ang_vel_step":0.0001,   #比例
-        # "curriculum_height_target_step":0.003,   #高度
+        "curriculum_lin_vel_step":0.015,   #比例
+        "curriculum_ang_vel_step":0.00015,   #比例
         "curriculum_lin_vel_min_range":0.3,   #比例
         "curriculum_ang_vel_min_range":0.1,   #比例
-        "lin_vel_err_range":[0.2,0.45],  #课程误差阈值
+        "lin_vel_err_range":[0.25,0.45],  #课程误差阈值
         "ang_vel_err_range":[0.25,0.45],  #课程误差阈值 连续曲线>方波>不波动
         "damping_descent":False,
         "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
-        "dof_stiffness_descent":[0.8 , 0.2, 0.001, 0.4], #刚度下降[stiffness_max,stiffness_min,stiffness_step（比例）,damping_threshold（存活步数比例）]，和域随机化冲突，二选一
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动
     domain_rand_cfg = { 
         "friction_ratio_range":[0.2 , 1.6],
-        "random_base_mass_shift_range":[-0.2 , 0.2], #质量偏移量
-        "random_other_mass_shift_range":[-0.05, 0.05],  #质量偏移量
-        "random_base_com_shift":0.01, #位置偏移量 xyz
+        "random_base_mass_shift_range":[-1.5 , 1.5], #质量偏移量
+        "random_other_mass_shift_range":[-0.1, 0.1],  #质量偏移量
+        "random_base_com_shift":0.05, #位置偏移量 xyz
         "random_other_com_shift":0.01, #位置偏移量 xyz
-        "random_KP":[0.9, 1.1], #比例
-        "random_KV":[0.9, 1.1], #比例
+        "random_KP":[0.8, 1.2], #比例
+        "random_KV":[0.8, 1.2], #比例
         "random_default_joint_angles":[-0.03,0.03], #rad
-        "damping_range":[0.9, 1.1], #比例
+        "damping_range":[0.8, 1.2], #比例
         "dof_stiffness_range":[0.0 , 0.0], #范围 不包含轮 [0.0 , 0.0]就是关闭，关闭的时候把初始值也调0
         "dof_armature_range":[0.0 , 0.008], #范围 额外惯性 类似电机减速器惯性 有助于仿真稳定性
     }

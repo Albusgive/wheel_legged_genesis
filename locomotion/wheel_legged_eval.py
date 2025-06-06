@@ -63,7 +63,7 @@ def main():
         print(f"模型加载失败: {e}")
         exit()
     obs, _ = env.reset()
-    pad = gamepad.control_gamepad(command_cfg,[1.0,0.1,3.14,0.005])
+    pad = gamepad.control_gamepad(command_cfg,[1.2,0.3,6.0,0.03,0.03,1.0])
     with torch.no_grad():
         while True:
             # actions = policy(obs)
