@@ -190,7 +190,7 @@ def get_cfgs():
         "tracking_height_sigma": 0.005,  
         "tracking_similar_legged_sigma": 0.01,  
         # "tracking_gravity_sigma": 0.01,
-        "feet_distance":[0.3, 0.6], #脚间距范围 m
+        "feet_distance":[0.3, 0.8], #脚间距范围 m
         "reward_scales": {
             "tracking_lin_x_vel": 1.0,
             "tracking_lin_y_vel": 0.0,
@@ -252,7 +252,6 @@ def get_cfgs():
         "terrain":True, #是否开启地形
         "train":"agent_train_gym",
         "eval":"agent_eval_gym",    # agent_eval_gym/circular
-        "num_respawn_points":3,
         "respawn_points":[
             [-5.0, -5.0, 0.0],    #plane地形坐标，一定要有，为了远离其他地形
             [5.0, 5.0, 0.0],
@@ -260,13 +259,18 @@ def get_cfgs():
         ],
         "horizontal_scale":0.1,
         "vertical_scale":0.001,
+        "vertical_stairs":True,
+        "v_stairs_height":0.1,  # 阶梯高度
+        "v_stairs_width":0.25,  # 阶梯宽度
+        "v_plane_size":0.8,  # 平台尺寸
+        "v_stairs_num":10       # 阶梯数量
     }
     return env_cfg, obs_cfg, reward_cfg, command_cfg, curriculum_cfg, domain_rand_cfg, terrain_cfg
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="wheel-legged-walking")
-    parser.add_argument("-B", "--num_envs", type=int, default=8192)
+    parser.add_argument("-B", "--num_envs", type=int, default=100)
     parser.add_argument("--max_iterations", type=int, default=30000)
     args = parser.parse_args()
 
@@ -284,7 +288,7 @@ def main():
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, 
         command_cfg=command_cfg, curriculum_cfg=curriculum_cfg, 
         domain_rand_cfg=domain_rand_cfg, terrain_cfg=terrain_cfg,
-        show_viewer=False, num_view = 20,
+        show_viewer=True, num_view = 100,
     )
 
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")

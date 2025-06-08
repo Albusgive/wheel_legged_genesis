@@ -27,8 +27,7 @@ class WheelLeggedEnv:
         self.curriculum_cfg = curriculum_cfg
         self.domain_rand_cfg = domain_rand_cfg
         self.terrain_cfg = terrain_cfg
-        self.num_respawn_points = self.terrain_cfg["num_respawn_points"]
-        self.respawn_points = self.terrain_cfg["respawn_points"]
+        respawn_points = self.terrain_cfg["respawn_points"]
 
         self.simulate_action_latency = True  # there is a 1 step latency on real robot
         self.dt = 0.01  # control frequency on real robot is 100hz
@@ -83,6 +82,7 @@ class WheelLeggedEnv:
         self.vertical_scale = self.terrain_cfg["vertical_scale"]
         self.height_field = cv2.imread("assets/terrain/png/"+self.terrain_cfg["train"]+".png", cv2.IMREAD_GRAYSCALE)
         self.terrain_height = torch.tensor(self.height_field, device=self.device) * self.vertical_scale
+        terrain_pos = []
         if self.terrain_cfg["terrain"]:
             print("\033[1;35m open terrain\033[0m")
             if self.mode:
@@ -92,10 +92,8 @@ class WheelLeggedEnv:
                 horizontal_scale=self.horizontal_scale, 
                 vertical_scale=self.vertical_scale,
                 ),)
-                self.base_terrain_pos = torch.zeros((self.num_respawn_points, 3), device=self.device)
-                for i in range(self.num_respawn_points):
-                    self.base_terrain_pos[i] = self.base_init_pos + torch.tensor(self.respawn_points[i], device=self.device)
-                print("\033[1;34m respawn_points: \033[0m",self.base_terrain_pos)
+                for i in range(len(respawn_points)):
+                    terrain_pos.append(respawn_points[i])
             else:
                 height_field = cv2.imread("assets/terrain/png/"+self.terrain_cfg["eval"]+".png", cv2.IMREAD_GRAYSCALE)
                 self.terrain = self.scene.add_entity(
@@ -106,6 +104,31 @@ class WheelLeggedEnv:
                 vertical_scale=self.vertical_scale,
                 ),)     
                 print("\033[1;34m respawn_points: \033[0m",self.base_init_pos)
+                
+        # 楼梯地形
+        if self.terrain_cfg["vertical_stairs"]:
+            self.v_stairs_num = self.terrain_cfg["v_stairs_num"]
+            self.v_stairs_height = self.terrain_cfg["v_stairs_height"]
+            self.v_stairs_width = self.terrain_cfg["v_stairs_width"]
+            self.v_plane_size = self.terrain_cfg["v_plane_size"]
+            
+            inverted_pyramid_size = self.v_plane_size + self.v_stairs_width * 2 * (self.v_stairs_num*2) 
+            inverted_pyramid_point = [inverted_pyramid_size/2,-inverted_pyramid_size/2,0]
+            self.add_inverted_pyramid(inverted_pyramid_point)
+            pyramid_size = self.v_plane_size + self.v_stairs_width*2* (self.v_stairs_num-1) 
+            pyramid_point = [pyramid_size/2,-inverted_pyramid_size-pyramid_size/2,0]
+            self.add_pyramid(pyramid_point)
+            
+            inverted_pyramid_point[2] += self.v_stairs_height
+            terrain_pos.append(inverted_pyramid_point)
+            pyramid_point[2] += self.v_stairs_height * self.v_stairs_num
+            terrain_pos.append(pyramid_point)
+            
+        # 构建复活点
+        self.num_respawn_points = len(terrain_pos)
+        self.base_terrain_pos = torch.tensor(terrain_pos,device=self.device)
+        self.base_terrain_pos[:,2] += self.base_init_pos[2]
+        print("\033[1;34m respawn_points: \033[0m",self.base_terrain_pos)
 
         # add robot
         base_init_pos = self.base_init_pos.cpu().numpy()
@@ -156,7 +179,6 @@ class WheelLeggedEnv:
                 self.wheel_dof_idx.append(self.motors_dof_idx[i])
         self.joint_dof_idx_np = np.array(joint_dof_idx)
         self.wheel_dof_idx_np = np.array(wheel_dof_idx)
-            
 
         # PD control parameters
         self.kp = np.full((self.num_envs, self.num_actions), self.env_cfg["joint_kp"])
@@ -642,6 +664,67 @@ class WheelLeggedEnv:
         self.lin_vel_error = torch.zeros((self.num_envs, 1), device=self.device, dtype=gs.tc_float)
         self.ang_vel_error = torch.zeros((self.num_envs, 1), device=self.device, dtype=gs.tc_float)
 
+    '''正金字塔楼梯'''
+    def add_pyramid(self,point):
+        max_z_pos = self.v_stairs_num * self.v_stairs_height - self.v_stairs_height / 2 + point[2]
+        current_z = max_z_pos
+        box_size = self.v_plane_size
+        box_pos = point
+        for _ in range(self.v_stairs_num):
+            box_pos[2] = current_z
+            box = self.scene.add_entity(
+                morph=gs.morphs.Box(
+                    pos=tuple(box_pos),
+                    size=(box_size, box_size, self.v_stairs_height),
+                    fixed=True
+                )
+            )
+            box_size += self.v_stairs_width*2
+            current_z -= self.v_stairs_height
+            size = self.v_plane_size + self.v_stairs_width*2* (self.v_stairs_num-1) 
+        return size
+
+    '''倒金字塔楼梯'''
+    def add_inverted_pyramid(self,point):
+        min_z_pos = self.v_stairs_height / 2 + point[2]
+        box_offset = (self.v_plane_size + self.v_stairs_width)/2
+        box_length = self.v_plane_size + self.v_stairs_width*2
+        box_pos = [[point[0]+box_offset, point[1], point[2]+self.v_stairs_height/2],
+                [point[0]-box_offset, point[1], point[2]+self.v_stairs_height/2],
+                [point[0], point[1]+box_offset, point[2]+self.v_stairs_height/2],
+                [point[0], point[1]-box_offset, point[2]+self.v_stairs_height/2]]
+        box_size = [[self.v_stairs_width, box_length, self.v_stairs_height],
+                    [self.v_stairs_width, box_length, self.v_stairs_height],
+                    [box_length, self.v_stairs_width, self.v_stairs_height],
+                    [box_length, self.v_stairs_width, self.v_stairs_height]]
+        box = self.scene.add_entity(
+                    morph=gs.morphs.Box(
+                        pos=(point[0], point[1], min_z_pos),
+                        size=(self.v_plane_size,self.v_plane_size,self.v_stairs_height),
+                        fixed=True
+                    )
+                )
+        for num_stairs in range(self.v_stairs_num*2):
+            for i in range(4):
+                if num_stairs<=self.v_stairs_num-1:
+                    box_pos[i][2] += self.v_stairs_height
+                else:
+                    box_pos[i][2] -= self.v_stairs_height
+                box = self.scene.add_entity(
+                    morph=gs.morphs.Box(
+                        pos=tuple(box_pos[i]),
+                        size=tuple(box_size[i]),
+                        fixed=True
+                    )
+                )
+            box_pos[0][0] += self.v_stairs_width
+            box_pos[1][0] -= self.v_stairs_width
+            box_pos[2][1] += self.v_stairs_width
+            box_pos[3][1] -= self.v_stairs_width
+            box_size[3][0] += self.v_stairs_width * 2
+            box_size[0][1] = box_size[1][1] =box_size[2][0]= box_size[3][0]
+        size = self.v_plane_size + self.v_stairs_width * 2 * (self.v_stairs_num*2) 
+        return size
 
     def get_relative_terrain_pos(self, base_pos):
         if not self.terrain_cfg["terrain"]:
