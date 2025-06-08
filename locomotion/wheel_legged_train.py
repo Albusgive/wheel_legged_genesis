@@ -132,7 +132,7 @@ def get_cfgs():
         # "stiffness":0.0, #不包含轮
         "armature":0.002,
         # termination 角度制    obs的angv弧度制
-        "termination_if_roll_greater_than": 20,  # degree
+        "termination_if_roll_greater_than": 25,  # degree
         "termination_if_pitch_greater_than": 25, #15度以内都摆烂，会导致episode太短难以学习
         "termination_if_base_connect_plane_than": True, #触地重置
         "connect_plane_links":[ #触地重置link
@@ -171,6 +171,7 @@ def get_cfgs():
             "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
+            "dof_pos_cmd": 5.0,
         },
         "noise":{
             "use": True,
@@ -185,18 +186,18 @@ def get_cfgs():
     reward_cfg = {
         "tracking_linx_sigma": 0.2, 
         "tracking_liny_sigma": 0.01, 
-        "tracking_ang_sigma": 0.6, 
+        "tracking_ang_sigma": 0.8, 
         "tracking_height_sigma": 0.005,  
         "tracking_similar_legged_sigma": 0.01,  
         # "tracking_gravity_sigma": 0.01,
-        "feet_distance":[0.3, 0.8], #脚间距范围 m
+        "feet_distance":[0.3, 0.6], #脚间距范围 m
         "reward_scales": {
-            "tracking_lin_x_vel": 1.5,
+            "tracking_lin_x_vel": 1.0,
             "tracking_lin_y_vel": 0.0,
             "tracking_ang_vel": 1.0,
-            "tracking_leg_length": -8.0,   #身高/膝关节/髋关节(thigh)/足端到base
+            "tracking_leg_length": -6.0,   #身高/膝关节/髋关节(thigh)/足端到base
             "lin_vel_z": -0.02, #大了影响高度变换速度
-            "joint_action_rate": -0.02,
+            "joint_action_rate": -0.01,
             "wheel_action_rate": -0.01,
             # "similar_to_default": 0.0,
             "projected_gravity": -12.0,   
@@ -205,11 +206,11 @@ def get_cfgs():
             "dof_acc": -1e-7,
             "dof_force": -1e-6,
             "ang_vel_xy": -0.02,
-            "collision": -0.00015,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
+            "collision": -0.0015,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
             # "terrain":0.1,
             "feet_distance": -100.0,
-            "survive": 1.0,
-            "tsk": -6.0,
+            "survive": 2.0,
+            "tsk": -3.0,
         },
     }
     command_cfg = {
@@ -232,7 +233,7 @@ def get_cfgs():
         "damping_descent":False,
         "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
     }
-    #域随机化 friction_ratio是范围波动 mass和com是偏移波动
+    #域随机化 friction_ratio是范围波动 mass和com是偏移波动 等到模型存活达到70%再开启域随机化
     domain_rand_cfg = { 
         "friction_ratio_range":[0.2 , 1.6],
         "random_base_mass_shift_range":[-1.5 , 1.5], #质量偏移量

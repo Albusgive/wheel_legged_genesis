@@ -177,6 +177,7 @@ class OnPolicyRunner:
         # self.writer.add_scalar('Curriculum/mean_min_height_range', self.env.command_ranges[:,3,0].mean(), locs['it'])
         self.writer.add_scalar('Curriculum/terrain_scale', self.env.terrain_buf.float().mean(), locs['it'])
         self.writer.add_scalar('Curriculum/damping_base', self.env.damping_base, locs['it'])
+        self.writer.add_scalar('Curriculum/survive_ratio', self.env.survive_ratio, locs['it'])
         if len(locs['rewbuffer']) > 0:
             self.writer.add_scalar('Train/mean_reward', statistics.mean(locs['rewbuffer']), locs['it'])
             self.writer.add_scalar('Train/mean_episode_length', statistics.mean(locs['lenbuffer']), locs['it'])
@@ -215,6 +216,7 @@ class OnPolicyRunner:
                         #   f"""{'mean_min_height_range:':>{pad}} {self.env.command_ranges[:,3,0].mean()}\n"""
                           f"""{'terrain_scale:':>{pad}} {self.env.terrain_buf.float().mean()}\n"""
                           f"""{'damping_base:':>{pad}} {self.env.damping_base}\n"""
+                          f"""{'survive_ratio:':>{pad}} {self.env.survive_ratio}\n"""
                           )
         log_string += (f"""{'-' * width}\n"""
                        f"""{'Total timesteps:':>{pad}} {self.tot_timesteps}\n"""

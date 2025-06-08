@@ -47,7 +47,9 @@ class WheelLeggedEnv:
         self.scene = gs.Scene(
             sim_options=gs.options.SimOptions(dt=self.dt, substeps=5),
             viewer_options=gs.options.ViewerOptions(
-                max_FPS=int(0.5 / self.dt),
+                run_in_thread = True,
+                max_FPS=int(1.0 / self.dt),
+                refresh_rate = int(1.0 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
                 camera_lookat=(0.0, 0.0, 0.5),
                 camera_fov=40,
@@ -205,7 +207,10 @@ class WheelLeggedEnv:
             self.reward_scales[name] *= self.dt
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
+        self.rew_survive = torch.ones(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
 
+        # 存活比例
+        self.survive_ratio = 0.0
 
         # prepare command_ranges lin_vel_x lin_vel_y ang_vel height_target
         self.command_ranges = torch.zeros((self.num_envs, self.num_commands,2),device=self.device,dtype=gs.tc_float)
@@ -248,7 +253,7 @@ class WheelLeggedEnv:
         self.commands = torch.zeros((self.num_envs, self.num_commands), device=self.device, dtype=gs.tc_float)
         self.commands_scale = torch.tensor(
             [self.obs_scales["lin_vel"], self.obs_scales["lin_vel"], self.obs_scales["ang_vel"], 
-             self.obs_scales["dof_pos"], self.obs_scales["dof_pos"], self.obs_scales["dof_pos"]], 
+             self.obs_scales["dof_pos_cmd"], self.obs_scales["dof_pos_cmd"], self.obs_scales["dof_pos_cmd"]], 
             device=self.device,
             dtype=gs.tc_float,
         )
@@ -325,6 +330,9 @@ class WheelLeggedEnv:
                 low = self.command_ranges[idx, command_idx, 0]
                 high = self.command_ranges[idx, command_idx, 1]
                 self.commands[idx, command_idx] = gs_rand_float(low, high, (1,), self.device)
+        if self.survive_ratio < 0.7:
+            self.commands[:,3] = self.commands[:,4]
+            self.commands[:,5] = 0.0
 
     def set_commands(self,envs_idx,commands):
         self.commands[envs_idx]=torch.tensor(commands,device=self.device, dtype=gs.tc_float)
@@ -405,7 +413,6 @@ class WheelLeggedEnv:
         time_out_idx = (self.episode_length_buf > self.max_episode_length).nonzero(as_tuple=False).flatten()
         self.extras["time_outs"] = torch.zeros_like(self.reset_buf, device=self.device, dtype=gs.tc_float)
         self.extras["time_outs"][time_out_idx] = 1.0
-
         if(self.mode):
             self.reset_idx(self.reset_buf.nonzero(as_tuple=False).flatten())
 
@@ -465,7 +472,9 @@ class WheelLeggedEnv:
     def reset_idx(self, envs_idx):
         if len(envs_idx) == 0:
             return
-        # print("\033[31m Reset Reset Reset Reset Reset Reset\033[0m")
+        # 计算要重置的环境步数
+        self.survive_ratio = self.episode_length_buf[envs_idx].float().mean() / self.max_episode_length
+        # print("\033[1;32m Survive Ratio: \033[0m", self.survive_ratio)
         # reset dofs
         self.dof_pos[envs_idx] = self.init_dof_pos[envs_idx]
         self.dof_vel[envs_idx] = 0.0
@@ -519,7 +528,8 @@ class WheelLeggedEnv:
 
         self._resample_commands(envs_idx)
         if self.mode:
-            self.domain_rand(envs_idx)
+            if self.survive_ratio > 0.7:
+                self.domain_rand(envs_idx)
         self.episode_lengths[envs_idx] = 0.0
 
     def reset(self):

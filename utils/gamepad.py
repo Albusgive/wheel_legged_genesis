@@ -72,9 +72,9 @@ class control_gamepad:
                                 self.commands[4] = self.command_cfg["leg_length_range"][0]
                             # 铁山靠
                             if event.value[0] == 1:
-                                self.commands[5] = self.command_cfg["tsk_range"][0]
-                            elif event.value[0] == -1:
                                 self.commands[5] = self.command_cfg["tsk_range"][1]
+                            elif event.value[0] == -1:
+                                self.commands[5] = self.command_cfg["tsk_range"][0]
                 elif event.type == pygame.JOYBUTTONDOWN:
                     # print(f"按钮 {event.button} 被按下。")
                     # X-0 A-1 B-2 Y-3 LB-4 RB-5
@@ -142,28 +142,28 @@ class control_gamepad:
                             self.commands[2] = -self.command_scale[2] * self.quiet_walking
                         case pygame.K_SPACE:
                             if self.leg_length_flag_1:
-                                self.commands[3] = +self.command_scale[3] * 100.0
+                                self.commands[3] = -self.command_scale[3] * 100.0
                             elif self.leg_length_flag_2:
-                                self.commands[4] = +self.command_scale[4] * 100.0
+                                self.commands[4] = -self.command_scale[4] * 100.0
                             else:
-                                self.commands[3] = +self.command_scale[3] * 100.0
-                                self.commands[4] = +self.command_scale[4] * 100.0
+                                self.commands[3] = -self.command_scale[3] * 100.0
+                                self.commands[4] = -self.command_scale[4] * 100.0
                         case pygame.K_c:
                             if self.leg_length_flag_1:
-                                self.commands[3] = -self.command_scale[3] * 100.0
+                                self.commands[3] = +self.command_scale[3] * 100.0
                             elif self.leg_length_flag_2:
-                                self.commands[4] = -self.command_scale[4] * 100.0
+                                self.commands[4] = +self.command_scale[4] * 100.0
                             else:
-                                self.commands[3] = -self.command_scale[3] * 100.0
-                                self.commands[4] = -self.command_scale[4] * 100.0
+                                self.commands[3] = +self.command_scale[3] * 100.0
+                                self.commands[4] = +self.command_scale[4] * 100.0
                         case pygame.K_LCTRL:
                             if self.leg_length_flag_1:
-                                self.commands[3] = -self.command_scale[3] * 100.0
+                                self.commands[3] = +self.command_scale[3] * 100.0
                             elif self.leg_length_flag_2:
-                                self.commands[4] = -self.command_scale[4] * 100.0
+                                self.commands[4] = +self.command_scale[4] * 100.0
                             else:
-                                self.commands[3] = -self.command_scale[3] * 100.0
-                                self.commands[4] = -self.command_scale[4] * 100.0
+                                self.commands[3] = +self.command_scale[3] * 100.0
+                                self.commands[4] = +self.command_scale[4] * 100.0
                         case pygame.K_r:
                             reset_flag=True
                         case pygame.K_LSHIFT:
@@ -172,6 +172,19 @@ class control_gamepad:
                             self.leg_length_flag_1 = True
                         case pygame.K_2:
                             self.leg_length_flag_2 = True
+                        case pygame.K_UP:
+                            self.commands[3] = self.command_cfg["leg_length_range"][0]
+                            self.commands[4] = self.command_cfg["leg_length_range"][1]
+                        case pygame.K_DOWN:
+                            self.commands[3] = self.command_cfg["leg_length_range"][1]
+                            self.commands[4] = self.command_cfg["leg_length_range"][0]
+                        case pygame.K_LEFT:
+                            self.commands[5] = self.command_cfg["tsk_range"][0]
+                        case pygame.K_RIGHT:
+                            self.commands[5] = self.command_cfg["tsk_range"][1]
+                        case pygame.K_BACKSPACE:
+                            self.commands[5] = 0
+                            
                 elif event.type == pygame.KEYUP:  # 键盘按键释放事件
                     match event.key:
                         case pygame.K_w:
