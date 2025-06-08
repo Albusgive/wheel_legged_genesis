@@ -66,6 +66,9 @@ train:
 |LB|left_leg_length_ctrl_flag|
 |RB|right_leg_length_ctrl_flag|
 |X|Reset|
+|XX|太空步|
+|YY|铁山靠|
+|B|铁山靠回正|
 
 **keyboard**
 |key|function|
@@ -82,6 +85,9 @@ train:
 |2|right_leg_length_ctrl_flag(仅右腿)|
 |Shift|静步(Quiet Walking)|
 |R|重置环境(Reset)|
+|UP&DOWN|太空步|
+|LEFT&RIGHT|铁山靠|
+|BACKSPACE|铁山靠回正|
 ## Terrain
 You can use the terrain as agent_eval_gym/agent_train_gym/agent_eval_gym/circular  
 |terrain|description|
