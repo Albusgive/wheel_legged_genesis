@@ -60,6 +60,7 @@ class WheelLeggedEnv:
                 enable_collision=True,
                 enable_joint_limit=True,
                 batch_dofs_info=True,
+                max_collision_pairs=64,
                 # batch_links_info=True,
             ),
             show_viewer=show_viewer,
