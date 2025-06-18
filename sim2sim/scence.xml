@@ -20,7 +20,7 @@
         <hfield name="terrain" file="/home/albusgive2/wheel_legged_genesis/assets/terrain/png/agent_eval_gym.png" size="10.5 10.5 .4 0.1" />
     </asset>
     <!-- 这里要使用绝对路径  Absolute path-->
-    <include file="/home/albusgive2/wheel_legged_genesis/assets/mjcf/nz/nz.xml"/>
+    <include file="/home/albusgive2/wheel_legged_genesis/assets/mjcf/CJ-003/CJ-003-wheelfoot.xml"/>
     <!-- <include file="/home/albusgive/wheel_legged_genesis/assets/mjcf/urdf2nz/urdf2nz.xml"/> -->
     <worldbody>
         <geom name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="plane"

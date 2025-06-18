@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="inverted_pendulum">
+    <compiler angle="radian" meshdir="assets" autolimits="true" />
+    <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" density="1.225"
+        viscosity="1.8e-5" />
+
+    <visual>
+        <global realtime="1" />
+        <quality shadowsize="16384" numslices="28" offsamples="4" />
+        <headlight diffuse="1 1 1" specular="0.5 0.5 0.5" active="1" />
+    </visual>
+    <include file="CJ-003-wheelfoot.xml"/>
+    <asset>
+        <mesh name="tetrahedron" vertex="0 0 0 1 0 0 0 1 0 0 0 1" />
+        <texture type="skybox" file="desert_sky.png"
+            gridsize="3 4" gridlayout=".U..LFRB.D.." />
+        <texture name="plane" type="2d" builtin="checker" rgb1=".1 .1 .1" rgb2=".9 .9 .9"
+            width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="plane" reflectance="0.3" texture="plane" texrepeat="1 1" texuniform="true"/>
+        <material name="box" rgba="0 0.5 0 1"  emission="0"/>
+    </asset>
+
+
+    <worldbody>
+        <geom name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="plane"
+            condim="3" />
+        <light directional="true" ambient=".3 .3 .3" pos="30 30 30" dir="0 -.5 -1"
+            diffuse=".5 .5 .5" specular=".5 .5 .5" />
+
+    </worldbody>
+</mujoco>

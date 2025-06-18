@@ -511,7 +511,7 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="left_hip_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_thigh_default">
             <geom contype="1" conaffinity="1" />
@@ -523,17 +523,17 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="left_connect1_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_connect2_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_wheel_foot_default">
             <geom contype="1" conaffinity="1" />
         </default>
 
         <default class="right_hip_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_thigh_default">
             <geom contype="1" conaffinity="1" />
@@ -545,10 +545,10 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="right_connect1_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_connect2_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_wheel_foot_default">
             <geom contype="1" conaffinity="1" />
@@ -556,18 +556,9 @@
     </default>
 
     <worldbody>
-        <light directional="true" ambient=".2 .2 .2" dir="-0.5 0 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0 -0.5 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0 0.5 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0.5 0 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <geom type="plane" size="0 0 0.01" material="grid" />
 
         <body name="base_body" pos="0 0 1">
-            <freejoint />
+            <!-- <freejoint /> -->
             <geom type="mesh" mesh="cj_003___base_1_10103_liu_mian_luo_mu__1" mass="0.0022"
                 class="base_default" />
             <geom type="mesh" mesh="cj_003___base_1_10103_liu_mian_luo_mu__2" mass="0.0022"

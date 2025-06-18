@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import numpy as np
 
 import torch
 from wheel_legged_env import WheelLeggedEnv
@@ -42,6 +43,7 @@ def main():
         terrain_cfg=terrain_cfg,
         robot_morphs="urdf",
         show_viewer=True,
+        num_view = 1,
         train_mode=False
     )
     print(reward_cfg)
@@ -63,15 +65,15 @@ def main():
         print(f"模型加载失败: {e}")
         exit()
     obs, _ = env.reset()
-    pad = gamepad.control_gamepad(command_cfg,[1.2,0.3,6.0,0.03,0.03,1.0])
+    pad = gamepad.control_gamepad(command_cfg,[2.0,0.0,10.0,0.9,0.9,1.0])
     with torch.no_grad():
         while True:
             # actions = policy(obs)
             actions = loaded_policy(obs)
             obs, _, rews, dones, infos = env.step(actions)
             comands,reset_flag = pad.get_commands()
-            print(f"comands: {comands}")
-            env.set_commands(0,comands)
+            # print(f"comands: {comands}")
+            env.set_commands(np.arange(env.num_envs),comands)
             if reset_flag:
                 env.reset()
             

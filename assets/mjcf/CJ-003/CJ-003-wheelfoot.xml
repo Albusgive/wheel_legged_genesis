@@ -511,7 +511,7 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="left_hip_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_thigh_default">
             <geom contype="1" conaffinity="1" />
@@ -523,17 +523,17 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="left_connect1_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_connect2_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="left_wheel_foot_default">
             <geom contype="1" conaffinity="1" />
         </default>
 
         <default class="right_hip_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_thigh_default">
             <geom contype="1" conaffinity="1" />
@@ -545,10 +545,10 @@
             <geom contype="1" conaffinity="1" />
         </default>
         <default class="right_connect1_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_connect2_default">
-            <geom contype="1" conaffinity="1" />
+            <geom contype="0" conaffinity="0" />
         </default>
         <default class="right_wheel_foot_default">
             <geom contype="1" conaffinity="1" />
@@ -556,18 +556,13 @@
     </default>
 
     <worldbody>
-        <light directional="true" ambient=".2 .2 .2" dir="-0.5 0 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0 -0.5 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0 0.5 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <light directional="true" ambient=".2 .2 .2" dir="0.5 0 -1" diffuse=".2 .2 .2"
-            specular=".2 .2 .2" />
-        <geom type="plane" size="0 0 0.01" material="grid" />
 
         <body name="base_body" pos="0 0 0.7">
-            <freejoint />
+            <!-- <freejoint /> -->
+            <joint type="slide" axis="0 1 0" damping="0.0" frictionloss="0.0" stiffness="0.0"/>
+            <joint type="slide" axis="0 0 1" damping="0.0" frictionloss="0.0" stiffness="0.0"/>
+            <site name="imu" size="0.01" rgba="0 0 1 1"/>
+
             <geom type="mesh" mesh="cj_003___base_1_10103_liu_mian_luo_mu__1" mass="0.0022"
                 class="base_default" />
             <geom type="mesh" mesh="cj_003___base_1_10103_liu_mian_luo_mu__2" mass="0.0022"
@@ -982,7 +977,7 @@
                         mass="0.2920" class="left_thigh_default" />
 
                     <body name="left_calf_body" pos="0 0.0489 -0.2">
-                        <joint name="left_calf_joint" type="hinge" axis="0 1 0" range="-2 0" />
+                        <joint name="left_calf_joint" type="hinge" axis="0 1 0"/>
                         <site name="left_connect1" size="0.001" rgba="0 1 0 1"
                             pos="-0.01042 0.04475 0.05909" />
                         <geom type="mesh" mesh="cj_003___left_calf_1_m3_fang_hua_luo_mu__1"
@@ -1401,7 +1396,7 @@
                         mass="0.2920" class="right_thigh_default" />
 
                     <body name="right_calf_body" pos="0 -0.0489 -0.2">
-                        <joint name="right_calf_joint" type="hinge" axis="0 1 0" range="-2 0" />
+                        <joint name="right_calf_joint" type="hinge" axis="0 1 0" />
                         <site name="right_connect1" size="0.001" rgba="0 1 0 1"
                             pos="-0.01042 -0.04475 0.05909" />
                         <geom type="mesh" mesh="cj_003___right_calf_1_m3_fang_hua_luo_mu__1"
@@ -1627,4 +1622,38 @@
         <connect site1="left_connect1" site2="left_connect2" />
         <connect site1="right_connect1" site2="right_connect2" />
     </equality>
+
+    <actuator>
+        <position name="left_hip_joint" joint="left_hip_joint" kp="30.0" kv="0.8" ctrlrange="-0.5 0.5" forcerange="-20 20"/>
+        <position name="left_thigh_joint" joint="left_thigh_joint" kp="30.0" kv="0.8" ctrlrange="0 1.0" forcerange="-20 20"/>
+        <position name="left_calf_joint" joint="left_calf_joint" kp="30.0" kv="0.8" ctrlrange="-2.0 0" forcerange="-20 20"/>
+        <position name="right_hip_joint" joint="right_hip_joint" kp="30.0" kv="0.8" ctrlrange="-0.5 0.5" forcerange="-20 20"/>
+        <position name="right_thigh_joint" joint="right_thigh_joint" kp="30.0" kv="0.8" ctrlrange="0 1.0" forcerange="-20 20"/>
+        <position name="right_calf_joint" joint="right_calf_joint" kp="30.0" kv="0.8" ctrlrange="-2.0 0" forcerange="-20 20"/>
+        <velocity name="left_wheel_joint" joint="left_wheel_joint" kv="5" />
+        <velocity name="right_wheel_joint" joint="right_wheel_joint" kv="5" />
+    </actuator>
+    <sensor>
+        <jointpos name='left_hip_joint_p' joint='left_hip_joint' />
+        <jointpos name='left_thigh_joint_p' joint='left_thigh_joint' />
+        <jointpos name='left_calf_joint_p' joint='left_calf_joint' />
+        <jointpos name='right_hip_joint_p' joint='right_hip_joint' />
+        <jointpos name='right_thigh_joint_p' joint='right_thigh_joint' />
+        <jointpos name='right_calf_joint_p' joint='right_calf_joint' />
+        <!-- <jointpos name='left_wheel_joint_p' joint='left_wheel_joint' />
+        <jointpos name='right_wheel_joint_p' joint='right_wheel_joint' /> -->
+    
+        <jointvel name='left_hip_joint_v' joint='left_hip_joint' />
+        <jointvel name='left_thigh_joint_v' joint='left_thigh_joint' />
+        <jointvel name='left_calf_joint_v' joint='left_calf_joint' />
+        <jointvel name='right_hip_joint_v' joint='right_hip_joint' />
+        <jointvel name='right_thigh_joint_v' joint='right_thigh_joint' />
+        <jointvel name='right_calf_joint_v' joint='right_calf_joint' />
+        <jointvel name='left_wheel_joint_v' joint='left_wheel_joint' />
+        <jointvel name='right_wheel_joint_v' joint='right_wheel_joint' />
+    
+        <framequat name='orientation' objtype='site' objname='imu' />
+        <gyro name='base_ang_vel' site='imu' />
+        <!-- <accelerometer name="projected_gravity" site="imu" /> -->
+      </sensor>
 </mujoco>

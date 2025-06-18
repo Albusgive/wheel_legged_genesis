@@ -14,9 +14,9 @@ def get_train_cfg(exp_name, max_iterations):
 
     train_cfg_dict = {
         "algorithm": {
-            "clip_param": 0.2,
-            "desired_kl": 0.01,
-            "entropy_coef": 0.01,
+            "clip_param": 0.2, #剪裁低可能会带来高noise_std
+            "desired_kl": 0.01, #裁减
+            "entropy_coef": 0.01, #惩罚项
             "gamma": 0.99,
             "lam": 0.95,
             "learning_rate": 1e-4,
@@ -30,9 +30,9 @@ def get_train_cfg(exp_name, max_iterations):
         "init_member_classes": {},
         "policy": {
             "activation": "elu",
-            "actor_hidden_dims": [512, 256, 128],
-            "critic_hidden_dims": [512, 256, 128],
-            "init_noise_std": 1.5,
+            "actor_hidden_dims": [512, 512, 256, 128],
+            "critic_hidden_dims": [512, 512, 256, 128],
+            "init_noise_std": 2.0,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -105,10 +105,10 @@ def get_cfgs():
         },
         # lower upper
         "dof_limit": {
-            "left_hip_joint":[-0.31416, 1.0],
+            "left_hip_joint":[-0.5, 1.0], # [-0.31416, 1.0]
             "left_thigh_joint": [0.0, 1.57],
             "left_calf_joint": [-2.0, 0.0],   
-            "right_hip_joint":[-1.0, 0.31416],
+            "right_hip_joint":[-1.0, 0.5],
             "right_thigh_joint": [0.0, 1.57],
             "right_calf_joint": [-2.0, 0.0],
             "left_wheel_joint": [0.0, 0.0],
@@ -153,7 +153,7 @@ def get_cfgs():
             },
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],#0.996195, 0, 0.0871557, 0
         "episode_length_s": 20.0,
-        "resampling_time_s": 3.0,
+        "resampling_time_s": 4.0,
         "joint_action_scale": 0.5,
         "wheel_action_scale": 10.0,
         "simulate_action_latency": True,
@@ -171,7 +171,7 @@ def get_cfgs():
             "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
-            "dof_pos_cmd": 5.0,
+            # "dof_pos_cmd": 5.0,
         },
         "noise":{
             "use": True,
@@ -184,23 +184,24 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
+        "only_positive_rewards": True,
         "tracking_linx_sigma": 0.2, 
-        "tracking_liny_sigma": 0.01, 
+        "tracking_liny_sigma": 0.6, 
         "tracking_ang_sigma": 0.8, 
-        "tracking_height_sigma": 0.005,  
-        "tracking_similar_legged_sigma": 0.01,  
-        # "tracking_gravity_sigma": 0.01,
-        "feet_distance":[0.3, 0.8], #脚间距范围 m
+        # "tracking_height_sigma": 0.005,  
+        "tracking_similar_legged_sigma": 0.05,  
+        "tracking_gravity_sigma": 0.1,
+        "feet_distance":[0.3, 0.6], #脚间距范围 m
         "reward_scales": {
-            "tracking_lin_x_vel": 1.0,
+            "tracking_lin_x_vel": 1.0,#1.5
             "tracking_lin_y_vel": 0.0,
-            "tracking_ang_vel": 1.0,
-            "tracking_leg_length": -6.0,   #身高/膝关节/髋关节(thigh)/足端到base
-            "lin_vel_z": -0.02, #大了影响高度变换速度
+            "tracking_ang_vel": 1.0, #1.5
+            "tracking_leg_length": -6.0,   #身高/膝关节/髋关节(thigh)/足端到base  高速情况下会产生对抗
+            "lin_vel_z": -0.02, #大了影响高度变换速度 -0.001
             "joint_action_rate": -0.01,
-            "wheel_action_rate": -0.01,
+            "wheel_action_rate": -0.01,#-0.01
             # "similar_to_default": 0.0,
-            "projected_gravity": -12.0,   
+            "projected_gravity": -12.0,  #-12
             "similar_legged": 0.0,  #不带hip
             # "joint_vel": -0.001,
             "dof_acc": -1e-7,
@@ -210,26 +211,29 @@ def get_cfgs():
             # "terrain":0.1,
             "feet_distance": -100.0,
             "survive": 2.0,
-            "tsk": -3.0,
+            "tsk": -3.0, #高速对抗
         },
     }
     command_cfg = {
         "num_commands": 6,
-        "base_range": 0.3,  #速度控制基础范围
-        "lin_vel_x_range": [-1.2, 1.2], #修改范围要调整奖励权重
+        "lin_vel_x_range": [-1.0, 1.0], #修改范围要调整奖励权重
         "lin_vel_y_range": [-0.0, 0.0], 
-        "ang_vel_range": [-6.28, 6.28],   #修改范围要调整奖励权重
+        "ang_vel_range": [-6.0, 6.0],   #修改范围要调整奖励权重
         "leg_length_range": [0.0, 1.0],   #两条腿
         "tsk_range": [-0.3, 0.3],   #左右
+        "high_speed": False,    #跟踪高速要开启这个 防止两个速度在高速情况下对抗 高速情况下存活率会变低是正常现象
+        "inverse_linx_angv": 1.0,    #前进速度和角速度反比 linx <= inverse_linx_angv / angv
+        "inverse_tsk": 3.0,    #std = inverse_tsk / angv 这个数值可以用std=1时估计inverse_tsk
+        "inverse_leg_length": 3.0,   #std = inverse_leg_length / angv
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.015,   #比例
-        "curriculum_ang_vel_step":0.00015,   #比例
+        "curriculum_lin_vel_step":0.005,   #比例
+        "curriculum_ang_vel_step":0.0005,   #比例
         "curriculum_lin_vel_min_range":0.3,   #比例
-        "curriculum_ang_vel_min_range":0.1,   #比例
-        "lin_vel_err_range":[0.25,0.45],  #课程误差阈值
-        "ang_vel_err_range":[0.25,0.45],  #课程误差阈值 连续曲线>方波>不波动
+        "curriculum_ang_vel_min_range":0.03,   #比例
+        "lin_vel_err_range":[0.35,0.5],  #课程误差阈值
+        "ang_vel_err_range":[0.5,1.0],  #课程误差阈值
         "damping_descent":False,
         "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
     }
@@ -259,7 +263,7 @@ def get_cfgs():
         ],
         "horizontal_scale":0.1,
         "vertical_scale":0.001,
-        "vertical_stairs":True,
+        "vertical_stairs":False,
         "v_stairs_height":0.1,  # 阶梯高度
         "v_stairs_width":0.25,  # 阶梯宽度
         "v_plane_size":0.8,  # 平台尺寸
@@ -270,7 +274,7 @@ def get_cfgs():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="wheel-legged-walking")
-    parser.add_argument("-B", "--num_envs", type=int, default=100)
+    parser.add_argument("-B", "--num_envs", type=int, default=8192)
     parser.add_argument("--max_iterations", type=int, default=30000)
     args = parser.parse_args()
 
@@ -288,7 +292,7 @@ def main():
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, 
         command_cfg=command_cfg, curriculum_cfg=curriculum_cfg, 
         domain_rand_cfg=domain_rand_cfg, terrain_cfg=terrain_cfg,
-        show_viewer=True, num_view = 100,
+        show_viewer=False, num_view = 100,
     )
 
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")

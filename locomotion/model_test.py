@@ -32,6 +32,15 @@ scene = gs.Scene(
 #     gs.morphs.Plane(),
 # )
 
+mesh = scene.add_entity(
+        morph=gs.morphs.Mesh(
+            file = "/home/albusgive2/wheel_legged_genesis/assets/terrain/stair.stl",
+            fixed = True,
+            convexify=True,
+            decimate_aggressiveness=0,
+        ),
+    )
+
 # horizontal_scale = 0.1
 # vertical_scale = 0.001
 # terrain = scene.add_entity(
