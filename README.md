@@ -125,4 +125,5 @@ When using AMD GPUs, it is recommended to select vulkan for the genesis backend
 - [x] swing legs & tie shan kao
 - [ ] high speed control
 ## 技术交流：  
-![wlg2](picture/wlg2.jpg) 
+微信超200人了,加QQ群吧
+![mujoco](picture/mujoco.jpg) 

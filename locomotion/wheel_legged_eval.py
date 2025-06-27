@@ -22,7 +22,8 @@ def main():
     parser.add_argument("--ckpt", type=int, default=7300)
     args = parser.parse_args()
     
-    gs.init(backend=gs.gpu,logging_level="warning")
+    # gs.init(backend=gs.gpu,logging_level="warning")
+    gs.init(backend=gs.gpu)
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg, curriculum_cfg, domain_rand_cfg, terrain_cfg, train_cfg = pickle.load(open(f"logs/{args.exp_name}/cfgs.pkl", "rb"))
     # env_cfg["simulate_action_latency"] = False
@@ -65,7 +66,7 @@ def main():
         print(f"模型加载失败: {e}")
         exit()
     obs, _ = env.reset()
-    pad = gamepad.control_gamepad(command_cfg,[2.0,0.0,10.0,0.9,0.9,1.0])
+    pad = gamepad.control_gamepad(command_cfg,[1.2,0.0,10.0,0.05,0.05,1.0])
     with torch.no_grad():
         while True:
             # actions = policy(obs)

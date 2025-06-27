@@ -123,7 +123,7 @@ class OnPolicyRunner:
                         lenbuffer.extend(cur_episode_length[new_ids][:, 0].cpu().numpy().tolist())
                         cur_reward_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
-                self.env.curriculum_commands(self.num_steps_per_env)
+                # self.env.curriculum_commands(self.num_steps_per_env)
                 stop = time.time()
                 collection_time = stop - start
 
@@ -176,8 +176,11 @@ class OnPolicyRunner:
         self.writer.add_scalar('Curriculum/mean_ang_vel_range', self.env.command_ranges[:,2,1].mean(), locs['it'])
         # self.writer.add_scalar('Curriculum/mean_min_height_range', self.env.command_ranges[:,3,0].mean(), locs['it'])
         self.writer.add_scalar('Curriculum/terrain_scale', self.env.terrain_buf.float().mean(), locs['it'])
-        self.writer.add_scalar('Curriculum/damping_base', self.env.damping_base, locs['it'])
         self.writer.add_scalar('Curriculum/survive_ratio', self.env.survive_ratio, locs['it'])
+        self.writer.add_scalar('Curriculum/mean_lin_vel_error', self.env.mean_lin_vel_error, locs['it'])
+        self.writer.add_scalar('Curriculum/mean_ang_vel_error', self.env.mean_ang_vel_error, locs['it'])
+        self.writer.add_scalar('Curriculum/linx_range_up_threshold', self.env.linx_range_up_threshold, locs['it'])
+        self.writer.add_scalar('Curriculum/angv_range_up_threshold', self.env.angv_range_up_threshold, locs['it'])
         if len(locs['rewbuffer']) > 0:
             self.writer.add_scalar('Train/mean_reward', statistics.mean(locs['rewbuffer']), locs['it'])
             self.writer.add_scalar('Train/mean_episode_length', statistics.mean(locs['lenbuffer']), locs['it'])
@@ -215,8 +218,11 @@ class OnPolicyRunner:
                           f"""{'mean_ang_vel_range:':>{pad}} {self.env.command_ranges[:,2,1].mean()}\n"""
                         #   f"""{'mean_min_height_range:':>{pad}} {self.env.command_ranges[:,3,0].mean()}\n"""
                           f"""{'terrain_scale:':>{pad}} {self.env.terrain_buf.float().mean()}\n"""
-                          f"""{'damping_base:':>{pad}} {self.env.damping_base}\n"""
                           f"""{'survive_ratio:':>{pad}} {self.env.survive_ratio}\n"""
+                          f"""{'mean_lin_vel_error:':>{pad}} {self.env.mean_lin_vel_error}\n"""
+                          f"""{'mean_ang_vel_error:':>{pad}} {self.env.mean_ang_vel_error}\n"""
+                          f"""{'linx_range_up_threshold:':>{pad}} {self.env.linx_range_up_threshold}\n"""
+                          f"""{'angv_range_up_threshold:':>{pad}} {self.env.angv_range_up_threshold}\n"""
                           )
         log_string += (f"""{'-' * width}\n"""
                        f"""{'Total timesteps:':>{pad}} {self.tot_timesteps}\n"""

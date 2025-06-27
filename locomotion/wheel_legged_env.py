@@ -195,15 +195,6 @@ class WheelLeggedEnv:
         
         damping = np.full((self.num_envs, self.robot.n_dofs), self.env_cfg["damping"])
         damping[:,:6] = 0
-        self.is_damping_descent = self.curriculum_cfg["damping_descent"]
-        self.damping_max = self.curriculum_cfg["dof_damping_descent"][0]
-        self.damping_min = self.curriculum_cfg["dof_damping_descent"][1]
-        self.damping_step = self.curriculum_cfg["dof_damping_descent"][2]*(self.damping_max - self.damping_min)
-        self.damping_threshold = self.curriculum_cfg["dof_damping_descent"][3]
-        if self.is_damping_descent:
-            self.damping_base = self.damping_max
-        else:
-            self.damping_base = self.env_cfg["damping"]
         self.robot.set_dofs_damping(damping, np.arange(0,self.robot.n_dofs))
         
         # from IPython import embed; embed()
@@ -237,7 +228,7 @@ class WheelLeggedEnv:
         self.rew_survive = torch.ones(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
 
         # 存活比例
-        self.survive_ratio = 0.0
+        self.survive_ratio = torch.zeros((self.num_envs,), device=self.device, dtype=gs.tc_float)
 
         # prepare command_ranges lin_vel_x lin_vel_y ang_vel height_target
         self.command_ranges = torch.zeros((self.num_envs, self.num_commands,2),device=self.device,dtype=gs.tc_float)
@@ -253,12 +244,14 @@ class WheelLeggedEnv:
         self.command_ranges[:,4,1] = self.command_cfg["leg_length_range"][1]
         self.command_ranges[:,5,0] = self.command_cfg["tsk_range"][0]
         self.command_ranges[:,5,1] = self.command_cfg["tsk_range"][1]
-        self.lin_vel_error = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
-        self.ang_vel_error = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
-        self.height_error = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
-        self.curriculum_lin_vel_scale = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
-        self.curriculum_ang_vel_scale = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
-
+        self.lin_vel_error = torch.zeros(self.num_envs, device=self.device, dtype=gs.tc_float)
+        self.ang_vel_error = torch.zeros(self.num_envs, device=self.device, dtype=gs.tc_float)
+        # self.height_error = torch.zeros((self.num_envs,1), device=self.device, dtype=gs.tc_float)
+        self.linx_vel_err_range_err = self.curriculum_cfg["lin_vel_err_range"][1]-self.curriculum_cfg["lin_vel_err_range"][0]
+        self.ang_vel_err_range_err = self.curriculum_cfg["ang_vel_err_range"][1]-self.curriculum_cfg["ang_vel_err_range"][0]
+        self.linx_range_up_threshold = 0.0
+        self.angv_range_up_threshold = 0.0
+        
         # initialize buffers
         self.base_lin_vel = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
         self.last_base_lin_vel = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
@@ -341,6 +334,9 @@ class WheelLeggedEnv:
         self.terrain_buf = torch.ones((self.num_envs,), device=self.device, dtype=gs.tc_int)
         # print("self.obs_buf.size(): ",self.obs_buf.size())
         self.episode_lengths = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
+        # 跟踪误差
+        self.mean_lin_vel_error = 0
+        self.mean_ang_vel_error = 0
         #外部力 TODO
         for solver in self.scene.sim.solvers:
             if not isinstance(solver, RigidSolver):
@@ -353,19 +349,20 @@ class WheelLeggedEnv:
         
     def _resample_commands(self, envs_idx): 
         if self.command_cfg["high_speed"]:  
-            for command_idx in (1,2):
+            for command_idx in (0,1):
                 low = self.command_ranges[envs_idx, command_idx, 0]
                 high = self.command_ranges[envs_idx, command_idx, 1]
                 self.commands[envs_idx, command_idx] = gs_rand_float(low, high, envs_idx.shape, self.device)
-            # 线速度和角速度
+            # 根据线速度求角速度max 因为角速度范围大,线速度范围小所以用线速度采样决定角速度范围比较均匀
+            safe_linv_x = torch.clip(torch.abs(self.commands[envs_idx, 0]), min=1e-4)
+            angv_limit = self.command_cfg["inverse_linx_angv"]/safe_linv_x
+            angv_low = torch.clip(self.command_ranges[envs_idx, 2, 0],-angv_limit)
+            angv_high = torch.clip(self.command_ranges[envs_idx, 2, 1],torch.zeros(envs_idx.shape, dtype=torch.float32, device=self.device),angv_limit)
+            self.commands[envs_idx, 2] = gs_rand_float(angv_low, angv_high, envs_idx.shape, self.device)
             safe_angv = torch.clip(torch.abs(self.commands[envs_idx, 2]), min=1e-4)
-            linx_limit = self.command_cfg["inverse_linx_angv"]/safe_angv
-            linx_low = torch.clip(self.command_ranges[envs_idx, 0, 0],-linx_limit)
-            linx_high = torch.clip(self.command_ranges[envs_idx, 0, 1],0,linx_limit)
-            self.commands[envs_idx, 0] = gs_rand_float(linx_low, linx_high, envs_idx.shape, self.device)
             #角速度命令高就要限制tsk 趋近0
             tsk_std = self.command_cfg["inverse_tsk"]/safe_angv
-            tsk_std = torch.clip(tsk_std, 1e-3, 2.0)
+            tsk_std = torch.clip(tsk_std, 1e-5, 2.0)
             self.commands[envs_idx, 5] = gs_rand_normal(0, tsk_std, envs_idx.shape, self.device)
             self.commands[envs_idx, 5] = torch.clip(self.commands[envs_idx, 5], self.command_cfg["tsk_range"][0], self.command_cfg["tsk_range"][1])
             #角速度命令高就要限制腿部相似 随机一个mean然后高斯采样
@@ -373,7 +370,7 @@ class WheelLeggedEnv:
                                            self.command_ranges[envs_idx, 3, 1],
                                            envs_idx.shape, self.device)
             leg_length_std = self.command_cfg["inverse_leg_length"]/safe_angv
-            leg_length_std = torch.clip(leg_length_std, 1e-3, 2.0)
+            leg_length_std = torch.clip(leg_length_std, 1e-5, 2.0)
             self.commands[envs_idx, 3] = gs_rand_normal(leg_length_mean, leg_length_std, envs_idx.shape, self.device)
             self.commands[envs_idx, 4] = gs_rand_normal(leg_length_mean, leg_length_std, envs_idx.shape, self.device)
             self.commands[envs_idx, 3] = torch.clip(self.commands[envs_idx, 3], self.command_cfg["leg_length_range"][0], self.command_cfg["leg_length_range"][1])
@@ -451,14 +448,21 @@ class WheelLeggedEnv:
         # check terrain_buf
         # 线速度达到预设的90%范围，角速度达到90%以上去其他地形(建议高一点)
         self.terrain_buf[:] = 0
-        self.terrain_buf = self.command_ranges[:, 0, 1] > self.command_cfg["lin_vel_x_range"][1] * 0.9
-        self.terrain_buf &= self.command_ranges[:, 2, 1] > self.command_cfg["ang_vel_range"][1] * 0.9
+        # self.terrain_buf = self.command_ranges[:, 0, 1] > self.command_cfg["lin_vel_x_range"][1] * 0.9
+        # self.terrain_buf &= self.command_ranges[:, 2, 1] > self.command_cfg["ang_vel_range"][1] * 0.9
         #固定一部分去地形
-        self.terrain_buf[:int(self.num_envs*0.4)] = 1
+        if(self.mode):
+            self.terrain_buf[:int(self.num_envs*0.4)] = 1
         
+        # compute curriculum
+        self.lin_vel_error += torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0])
+        self.ang_vel_error += torch.abs(self.commands[:, 2] - self.base_ang_vel[:, 2])
+            
         # check termination and reset
         if(self.mode):
             self.check_termination()
+            self._resample_commands(envs_idx)
+            self.curriculum_commands()
 
         time_out_idx = (self.episode_length_buf > self.max_episode_length).nonzero(as_tuple=False).flatten()
         self.extras["time_outs"] = torch.zeros_like(self.reset_buf, device=self.device, dtype=gs.tc_float)
@@ -477,13 +481,6 @@ class WheelLeggedEnv:
         if self.reward_cfg["only_positive_rewards"]:
             self.rew_buf[:] = torch.clip(self.rew_buf[:], min=0.0)
             
-        # compute curriculum reward
-        self.lin_vel_error += torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0]).mean()
-        self.ang_vel_error += torch.abs(self.commands[:, 2] - self.base_ang_vel[:, 2]).mean()
-
-        if(self.mode):
-            self._resample_commands(envs_idx)
-            # self.curriculum_commands()
         # else:
         #     print("base_lin_vel: ",self.base_lin_vel[0,:])
             
@@ -588,11 +585,14 @@ class WheelLeggedEnv:
             )
             self.episode_sums[key][envs_idx] = 0.0
 
-        self._resample_commands(envs_idx)
         if self.mode:
+            self._resample_commands(envs_idx)
             # if self.survive_ratio > 0.7:
-            self.domain_rand(envs_idx)
+        self.domain_rand(envs_idx)
         self.episode_lengths[envs_idx] = 0.0
+        # 重置误差
+        self.lin_vel_error[envs_idx] = 0
+        self.ang_vel_error[envs_idx] = 0
 
     def reset(self):
         self.reset_buf[:] = True
@@ -601,9 +601,12 @@ class WheelLeggedEnv:
 
     def check_termination(self):
         self.reset_buf = self.episode_length_buf > self.max_episode_length
-        # if self.survive_ratio > 0.65:
-        self.reset_buf |= torch.abs(self.base_euler[:, 1]) > self.env_cfg["termination_if_pitch_greater_than"]
-        self.reset_buf |= torch.abs(self.base_euler[:, 0]) > self.env_cfg["termination_if_roll_greater_than"]
+        if self.survive_ratio > 0.8:
+            self.reset_buf |= torch.abs(self.base_euler[:, 1]) > self.env_cfg["termination_if_pitch_greater_than"][1]
+            self.reset_buf |= torch.abs(self.base_euler[:, 0]) > self.env_cfg["termination_if_roll_greater_than"][1]
+        else:
+            self.reset_buf |= torch.abs(self.base_euler[:, 1]) > self.env_cfg["termination_if_pitch_greater_than"][0]
+            self.reset_buf |= torch.abs(self.base_euler[:, 0]) > self.env_cfg["termination_if_roll_greater_than"][0]
         # self.reset_buf |= torch.abs(self.base_pos[:, 2]) < self.env_cfg["termination_if_base_height_greater_than"]
         if(self.env_cfg["termination_if_base_connect_plane_than"]):
             for idx in self.reset_links:
@@ -639,17 +642,7 @@ class WheelLeggedEnv:
         dof_pos_shift = self.joint_angle_low + self.joint_angle_range * torch.rand(len(envs_idx),self.num_actions,device=self.device,dtype=gs.tc_float)
         self.default_dof_pos[envs_idx] = dof_pos_shift + self.basic_default_dof_pos
 
-        #damping下降
-        if self.is_damping_descent:
-            if self.episode_lengths[envs_idx].mean()/(self.env_cfg["episode_length_s"]/self.dt) > self.damping_threshold:
-                self.damping_base -= self.damping_step
-                if self.damping_base < self.damping_min:
-                    self.damping_base = self.damping_min
-            else:
-                self.damping_base += self.damping_step
-                if self.damping_base > self.damping_max:
-                    self.damping_base = self.damping_max      
-        damping = (self.dof_damping_low+self.dof_damping_range * torch.rand(len(envs_idx), self.robot.n_dofs)) * self.damping_base
+        damping = (self.dof_damping_low+self.dof_damping_range * torch.rand(len(envs_idx), self.robot.n_dofs))
         damping[:,:6] = 0
         self.robot.set_dofs_damping(damping=damping, 
                                    dofs_idx_local=np.arange(0, self.robot.n_dofs), 
@@ -661,49 +654,56 @@ class WheelLeggedEnv:
                                    dofs_idx_local=np.arange(0, self.robot.n_dofs), 
                                    envs_idx=envs_idx)
 
-    def adjust_scale(self, error,lower_err,upper_err, scale, scale_step, min_range, range_cfg):
-        # 计算误差范围
-        min_condition = error < lower_err
-        max_condition = error > upper_err
-        # 调整 scale
-        scale[min_condition] += scale_step
-        scale[max_condition] -= scale_step
-        scale.clip_(min_range, 1)
-        # 更新 command_ranges
-        range_min, range_max = range_cfg
-        return scale * range_min, scale * range_max
-
-    def curriculum_commands(self, num):
+    def curriculum_commands(self):
         # 更新误差
-        self.lin_vel_error /= num
-        self.ang_vel_error /= num
+        self.mean_lin_vel_error = (self.lin_vel_error/self.episode_length_buf).mean().item()
+        self.mean_ang_vel_error = (self.ang_vel_error/self.episode_length_buf).mean().item()
+        # print("lin_vel_error: ",lin_vel_error)
+        # print("ang_vel_error: ",ang_vel_error)
         # 调整线速度
-        lin_min_range, lin_max_range = self.adjust_scale(
-            self.lin_vel_error, 
-            self.curriculum_cfg["lin_vel_err_range"][0],   #误差反馈更新
-            self.curriculum_cfg["lin_vel_err_range"][1],    #err back update
-            self.curriculum_lin_vel_scale, 
-            self.curriculum_cfg["curriculum_lin_vel_step"], 
-            self.curriculum_cfg["curriculum_lin_vel_min_range"], 
-            self.command_cfg["lin_vel_x_range"]
-        )
-        self.command_ranges[:, 0, 0] = lin_min_range.squeeze()
-        self.command_ranges[:, 0, 1] = lin_max_range.squeeze()
-        # 调整角速度    角速度误差可以大一些，因为comand范围更大
-        ang_min_range, ang_max_range = self.adjust_scale(
-            self.ang_vel_error, 
-            self.curriculum_cfg["ang_vel_err_range"][0],
-            self.curriculum_cfg["ang_vel_err_range"][1],
-            self.curriculum_ang_vel_scale, 
-            self.curriculum_cfg["curriculum_ang_vel_step"], 
-            self.curriculum_cfg["curriculum_ang_vel_min_range"], 
-            self.command_cfg["ang_vel_range"]
-        )
-        self.command_ranges[:, 2, 0] = ang_min_range.squeeze()
-        self.command_ranges[:, 2, 1] = ang_max_range.squeeze()
-        # 重置误差
-        self.lin_vel_error = torch.zeros((self.num_envs, 1), device=self.device, dtype=gs.tc_float)
-        self.ang_vel_error = torch.zeros((self.num_envs, 1), device=self.device, dtype=gs.tc_float)
+        lin_err_high = 999
+        if self.curriculum_cfg["err_mode"]:
+            self.linx_range_up_threshold = self.curriculum_cfg["lin_vel_err_range"][0]
+            lin_err_high = self.curriculum_cfg["lin_vel_err_range"][1]
+        else:
+            mean_linx_range = self.command_ranges[:, 0, 1].mean()
+            ratio = mean_linx_range / self.command_cfg["lin_vel_x_range"][1]
+            self.linx_range_up_threshold = self.linx_vel_err_range_err*(-torch.exp(-torch.square(ratio)/0.2)+1) + self.curriculum_cfg["lin_vel_err_range"][0]
+            
+        if self.mean_lin_vel_error < self.linx_range_up_threshold:
+            self.command_ranges[:, 0, 0] += self.curriculum_cfg["curriculum_lin_vel_step"]*self.command_cfg["lin_vel_x_range"][0]
+            self.command_ranges[:, 0, 1] += self.curriculum_cfg["curriculum_lin_vel_step"]*self.command_cfg["lin_vel_x_range"][1]
+        elif self.mean_lin_vel_error > lin_err_high:
+            self.command_ranges[:, 0, 0] -= self.curriculum_cfg["curriculum_lin_vel_step"]*self.command_cfg["lin_vel_x_range"][0]
+            self.command_ranges[:, 0, 1] -= self.curriculum_cfg["curriculum_lin_vel_step"]*self.command_cfg["lin_vel_x_range"][1]
+        self.command_ranges[:,0,0] = torch.clamp(self.command_ranges[:,0,0],
+                                                 self.command_cfg["lin_vel_x_range"][0],
+                                                   self.curriculum_cfg["curriculum_lin_vel_min_range"] * self.command_cfg["lin_vel_x_range"][0])
+        self.command_ranges[:,0,1] = torch.clamp(self.command_ranges[:,0,1],
+                                                   self.curriculum_cfg["curriculum_lin_vel_min_range"] * self.command_cfg["lin_vel_x_range"][1],
+                                                   self.command_cfg["lin_vel_x_range"][1])
+        #角度
+        angv_err_high = 999
+        if self.curriculum_cfg["err_mode"]:
+            self.angv_range_up_threshold = self.curriculum_cfg["ang_vel_err_range"][0]
+            angv_err_high = self.curriculum_cfg["ang_vel_err_range"][1]
+        else:
+            mean_angv_range = self.command_ranges[:, 2, 1].mean()  
+            ratio = mean_angv_range / self.command_cfg["ang_vel_range"][1]
+            self.angv_range_up_threshold = (self.ang_vel_err_range_err)*(-torch.exp(-torch.square(ratio)/0.1)+1) + self.curriculum_cfg["ang_vel_err_range"][0]
+
+        if self.mean_ang_vel_error < self.angv_range_up_threshold:
+            self.command_ranges[:, 2, 0] += self.curriculum_cfg["curriculum_ang_vel_step"]*self.command_cfg["ang_vel_range"][0]
+            self.command_ranges[:, 2, 1] += self.curriculum_cfg["curriculum_ang_vel_step"]*self.command_cfg["ang_vel_range"][1]
+        elif self.mean_ang_vel_error > angv_err_high:
+            self.command_ranges[:, 2, 0] -= self.curriculum_cfg["curriculum_ang_vel_step"]*self.command_cfg["ang_vel_range"][0]
+            self.command_ranges[:, 2, 1] -= self.curriculum_cfg["curriculum_ang_vel_step"]*self.command_cfg["ang_vel_range"][1]
+        self.command_ranges[:,2,0] = torch.clamp(self.command_ranges[:,2,0],
+                                                 self.command_cfg["ang_vel_range"][0],
+                                                   self.curriculum_cfg["curriculum_ang_vel_min_range"] * self.command_cfg["ang_vel_range"][0])
+        self.command_ranges[:,2,1] = torch.clamp(self.command_ranges[:,2,1],
+                                                   self.curriculum_cfg["curriculum_ang_vel_min_range"] * self.command_cfg["ang_vel_range"][1],
+                                                   self.command_cfg["ang_vel_range"][1])
 
     '''正金字塔楼梯'''
     def add_pyramid(self,point):
@@ -811,9 +811,15 @@ class WheelLeggedEnv:
         # Tracking of linear velocity commands (x axes)
         # 二次函数跟踪速度和角速度会导致正奖励太低，提高梯度也很难跟进
         lin_vel_error = torch.square(self.commands[:, 0] - self.base_lin_vel[:, 0])
-        lin_vel_error = torch.exp(-lin_vel_error / self.reward_cfg["tracking_linx_sigma"])
-        return lin_vel_error
-    
+        lin_vel_reward = torch.exp(-lin_vel_error / self.reward_cfg["tracking_linx_sigma"])
+        if self.command_cfg["zero_stable"]:
+            near_zero_mask = (self.commands[:, 0] >= -0.01) & (self.commands[:, 0] <= 0.01)
+            if torch.any(near_zero_mask):
+                second_error = torch.square(self.base_lin_vel[near_zero_mask, 0])
+                second_reward = torch.exp(-second_error / self.reward_cfg["tracking_linx_sigma"])
+                lin_vel_reward[near_zero_mask] += second_reward
+        return lin_vel_reward
+
     def _reward_tracking_lin_y_vel(self):
         # Tracking of linear velocity commands (y axes)
         # 当存在横向移动命令时鼓励横向髋关节变化
@@ -823,8 +829,14 @@ class WheelLeggedEnv:
     def _reward_tracking_ang_vel(self):
         # Tracking of angular velocity commands (yaw)
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-        ang_vel_error = torch.exp(-ang_vel_error / self.reward_cfg["tracking_ang_sigma"])
-        return ang_vel_error
+        ang_vel_reward = torch.exp(-ang_vel_error / self.reward_cfg["tracking_ang_sigma"])
+        if self.command_cfg["zero_stable"]:
+            near_zero_mask = (self.commands[:, 0] >= -0.01) & (self.commands[:, 0] <= 0.01)
+            if torch.any(near_zero_mask):
+                second_error = torch.square(self.base_lin_vel[near_zero_mask, 2])
+                second_reward = torch.exp(-second_error / self.reward_cfg["tracking_ang_sigma"])
+                ang_vel_reward[near_zero_mask] += second_reward
+        return ang_vel_reward
 
     def _reward_tracking_leg_length(self):
         # 身高跟踪 建议用高斯函数
@@ -875,12 +887,6 @@ class WheelLeggedEnv:
         #二次函数
         reward = torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
         return reward
-
-    def _reward_similar_legged(self):
-        # 两侧腿相似 适合使用轮子行走 抑制劈岔
-        # legged_error = torch.sum(torch.square(self.dof_pos[:,1:3] - self.dof_pos[:,4:6]), dim=1)
-        legged_error = torch.sum(torch.abs(torch.pow(self.dof_pos[:,1:3] - self.dof_pos[:,4:6], 3)), dim=1)
-        return torch.exp(-legged_error / self.reward_cfg["tracking_similar_legged_sigma"])
 
     def _reward_joint_vel(self):
         # Penalize dof velocities

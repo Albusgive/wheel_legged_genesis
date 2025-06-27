@@ -32,7 +32,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 512, 256, 128],
             "critic_hidden_dims": [512, 512, 256, 128],
-            "init_noise_std": 2.0,
+            "init_noise_std": 1.5,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -41,7 +41,7 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 24,    #每轮仿真多少step
+            "num_steps_per_env": 50,    #每轮仿真多少step
             "policy_class_name": "ActorCritic",
             "record_interval": -1,
             "resume": False,
@@ -132,8 +132,8 @@ def get_cfgs():
         # "stiffness":0.0, #不包含轮
         "armature":0.002,
         # termination 角度制    obs的angv弧度制
-        "termination_if_roll_greater_than": 25,  # degree
-        "termination_if_pitch_greater_than": 25, #15度以内都摆烂，会导致episode太短难以学习
+        "termination_if_roll_greater_than": [20,60],  # degree
+        "termination_if_pitch_greater_than": [20,60], #15度以内都摆烂，会导致episode太短难以学习
         "termination_if_base_connect_plane_than": True, #触地重置
         "connect_plane_links":[ #触地重置link
             "base_link",
@@ -153,7 +153,7 @@ def get_cfgs():
             },
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],#0.996195, 0, 0.0871557, 0
         "episode_length_s": 20.0,
-        "resampling_time_s": 4.0,
+        "resampling_time_s": 3.0,
         "joint_action_scale": 0.5,
         "wheel_action_scale": 10.0,
         "simulate_action_latency": True,
@@ -171,7 +171,6 @@ def get_cfgs():
             "ang_vel": 0.25,
             "dof_pos": 1.0,
             "dof_vel": 0.05,
-            # "dof_pos_cmd": 5.0,
         },
         "noise":{
             "use": True,
@@ -184,25 +183,25 @@ def get_cfgs():
     }
     # 名字和奖励函数名一一对应
     reward_cfg = {
-        "only_positive_rewards": True,
-        "tracking_linx_sigma": 0.2, 
-        "tracking_liny_sigma": 0.6, 
+        "only_positive_rewards": True,  
+        "tracking_linx_sigma": 0.3, 
+        "tracking_liny_sigma": 1.0, 
         "tracking_ang_sigma": 0.8, 
         # "tracking_height_sigma": 0.005,  
         "tracking_similar_legged_sigma": 0.05,  
-        "tracking_gravity_sigma": 0.1,
+        "tracking_gravity_sigma": 0.1,  
         "feet_distance":[0.3, 0.6], #脚间距范围 m
         "reward_scales": {
             "tracking_lin_x_vel": 1.0,#1.5
             "tracking_lin_y_vel": 0.0,
             "tracking_ang_vel": 1.0, #1.5
-            "tracking_leg_length": -6.0,   #身高/膝关节/髋关节(thigh)/足端到base  高速情况下会产生对抗
+            "tracking_leg_length": -8.0,   #身高/膝关节/髋关节(thigh)/足端到base  高速情况下会产生对抗
             "lin_vel_z": -0.02, #大了影响高度变换速度 -0.001
             "joint_action_rate": -0.01,
-            "wheel_action_rate": -0.01,#-0.01
+            "wheel_action_rate": -0.015, #-0.01
             # "similar_to_default": 0.0,
-            "projected_gravity": -12.0,  #-12
-            "similar_legged": 0.0,  #不带hip
+            "projected_gravity": -10.0,  #-12
+            # "similar_legged": 0.0,  #不带hip
             # "joint_vel": -0.001,
             "dof_acc": -1e-7,
             "dof_force": -1e-6,
@@ -211,31 +210,31 @@ def get_cfgs():
             # "terrain":0.1,
             "feet_distance": -100.0,
             "survive": 2.0,
-            "tsk": -3.0, #高速对抗
+            "tsk": -2.0, #高速对抗
         },
     }
     command_cfg = {
         "num_commands": 6,
-        "lin_vel_x_range": [-1.0, 1.0], #修改范围要调整奖励权重
+        "lin_vel_x_range": [-2.0, 2.0], #修改范围要调整奖励权重 低速范围约[-1.0,1.0]
         "lin_vel_y_range": [-0.0, 0.0], 
-        "ang_vel_range": [-6.0, 6.0],   #修改范围要调整奖励权重
+        "ang_vel_range": [-12.0, 12.0],   #修改范围要调整奖励权重 低速范围约[-3.14,3.14]
         "leg_length_range": [0.0, 1.0],   #两条腿
         "tsk_range": [-0.3, 0.3],   #左右
-        "high_speed": False,    #跟踪高速要开启这个 防止两个速度在高速情况下对抗 高速情况下存活率会变低是正常现象
-        "inverse_linx_angv": 1.0,    #前进速度和角速度反比 linx <= inverse_linx_angv / angv
-        "inverse_tsk": 3.0,    #std = inverse_tsk / angv 这个数值可以用std=1时估计inverse_tsk
-        "inverse_leg_length": 3.0,   #std = inverse_leg_length / angv
+        "high_speed": True,    #跟踪高速要开启这个 防止两个速度在高速情况下对抗 高速情况下存活率会变低是正常现象
+        "inverse_linx_angv": 1.0,    #前进速度和角速度反比 angv <= inverse_linx_angv / linv_x (desmos函数图像:y=\ \frac{i}{x}\left\{-10<y<10\right\}\left\{-2<x<2\right\})
+        "inverse_tsk": 2.0,    #std = inverse_tsk / angv 这个数值可以用std=1时估计inverse_tsk 越低在高速情况下越贴近0
+        "inverse_leg_length": 2.0,   #std = inverse_leg_length / angv 如上同理 越低在高速情况下两腿越相似
+        "zero_stable": False,
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.005,   #比例
-        "curriculum_ang_vel_step":0.0005,   #比例
-        "curriculum_lin_vel_min_range":0.3,   #比例
-        "curriculum_ang_vel_min_range":0.03,   #比例
-        "lin_vel_err_range":[0.35,0.5],  #课程误差阈值
-        "ang_vel_err_range":[0.5,1.0],  #课程误差阈值
-        "damping_descent":False,
-        "dof_damping_descent":[0.2, 0.005, 0.001, 0.4],#[damping_max,damping_min,damping_step（比例）,damping_threshold（存活步数比例）]
+        "curriculum_lin_vel_step":0.0003,   #比例    0.001
+        "curriculum_ang_vel_step":0.0001,   #比例   0.0005
+        "curriculum_lin_vel_min_range":0.3,   #比例 
+        "curriculum_ang_vel_min_range":0.05,   #比例 
+        "err_mode": False, #误差模式 True  动态误差模式 False  要注意在地形情况下速度跟踪肯定和平地差距很大注意误差调整
+        "lin_vel_err_range":[0.2,0.4],  #[0.35,0.5]  课程误差阈值(上升/下降) 误差 or 误差比例(上升/下降)上升阈值会在前期从下降阈值误差下降到设定值
+        "ang_vel_err_range":[0.4,0.8],  #[0.5,1.0]    
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动 等到模型存活达到70%再开启域随机化
     domain_rand_cfg = { 
@@ -292,7 +291,7 @@ def main():
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, 
         command_cfg=command_cfg, curriculum_cfg=curriculum_cfg, 
         domain_rand_cfg=domain_rand_cfg, terrain_cfg=terrain_cfg,
-        show_viewer=False, num_view = 100,
+        show_viewer=False, num_view = 1,
     )
 
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")
