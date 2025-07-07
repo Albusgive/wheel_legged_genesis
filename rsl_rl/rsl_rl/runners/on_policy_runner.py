@@ -219,10 +219,6 @@ class OnPolicyRunner:
                         #   f"""{'mean_min_height_range:':>{pad}} {self.env.command_ranges[:,3,0].mean()}\n"""
                           f"""{'terrain_scale:':>{pad}} {self.env.terrain_buf.float().mean()}\n"""
                           f"""{'survive_ratio:':>{pad}} {self.env.survive_ratio}\n"""
-                          f"""{'mean_lin_vel_error:':>{pad}} {self.env.mean_lin_vel_error}\n"""
-                          f"""{'mean_ang_vel_error:':>{pad}} {self.env.mean_ang_vel_error}\n"""
-                          f"""{'linx_range_up_threshold:':>{pad}} {self.env.linx_range_up_threshold}\n"""
-                          f"""{'angv_range_up_threshold:':>{pad}} {self.env.angv_range_up_threshold}\n"""
                           )
         log_string += (f"""{'-' * width}\n"""
                        f"""{'Total timesteps:':>{pad}} {self.tot_timesteps}\n"""

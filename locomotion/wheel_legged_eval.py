@@ -29,10 +29,8 @@ def main():
     # env_cfg["simulate_action_latency"] = False
     terrain_cfg["terrain"] = True
     terrain_cfg["eval"] = "agent_eval_gym" #agent_eval_gym/agent_train_gym/circular
-    # env_cfg["kp"] = 40
-    # env_cfg["wheel_action_scale"] = 5
-    # env_cfg["joint_damping"] = 0
-    # env_cfg["wheel_damping"] = 0
+    env_cfg["linear_velocity_render"] = True
+    env_cfg["angular_velocity_render"] = True
     env = WheelLeggedEnv(
         num_envs=1,
         env_cfg=env_cfg,
@@ -66,7 +64,10 @@ def main():
         print(f"模型加载失败: {e}")
         exit()
     obs, _ = env.reset()
-    pad = gamepad.control_gamepad(command_cfg,[1.2,0.0,10.0,0.05,0.05,1.0])
+    pad = gamepad.control_gamepad(command_cfg,[env.command_cfg["lin_vel_x_range"][1],
+                                               env.command_cfg["lin_vel_y_range"][1],
+                                               env.command_cfg["ang_vel_range"][1]
+                                               ,0.05,0.05,1.0])
     with torch.no_grad():
         while True:
             # actions = policy(obs)

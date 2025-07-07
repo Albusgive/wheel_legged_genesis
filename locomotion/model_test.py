@@ -15,7 +15,7 @@ scene = gs.Scene(
         camera_lookat = (0.0, 0.0, 0.5),
         camera_fov    = 40,
         max_FPS       = 120,
-        run_in_thread = True,
+        run_in_thread = False,
     ),
     vis_options = gs.options.VisOptions(
         show_world_frame = True,
@@ -32,14 +32,14 @@ scene = gs.Scene(
 #     gs.morphs.Plane(),
 # )
 
-mesh = scene.add_entity(
-        morph=gs.morphs.Mesh(
-            file = "/home/albusgive2/wheel_legged_genesis/assets/terrain/stair.stl",
-            fixed = True,
-            convexify=True,
-            decimate_aggressiveness=0,
-        ),
-    )
+# mesh = scene.add_entity(
+#         morph=gs.morphs.Mesh(
+#             file = "/home/albusgive2/wheel_legged_genesis/assets/terrain/stair.stl",
+#             fixed = True,
+#             convexify=True,
+#             decimate_aggressiveness=0,
+#         ),
+#     )
 
 # horizontal_scale = 0.1
 # vertical_scale = 0.001
@@ -134,7 +134,7 @@ mesh = scene.add_entity(
 
 
 # vs = scene.add_entity(
-#     gs.morphs.MJCF(file="assets/terrain/vertical_staircase.xml",
+#     gs.morphs.MJCF(file="assets/terrain/el.xml",
 #     pos=(0.0, 1.0, 0.0)
 #     ),
 #     vis_mode='collision'
@@ -209,6 +209,7 @@ scene.build(n_envs=1)
 # rgb, depth, segmentation, normal = cam.render(rgb=True, depth=True, segmentation=True, normal=True)
 
 # cam.start_recording()
+cnt=2
 while True:
     # link_pos = rigid_solver.get_links_pos([1,])
     # force = 100 * link_pos
@@ -221,6 +222,12 @@ while True:
     #         dofs_idx,
     #     )
     scene.step()
+    scene.clear_debug_objects()
+    # scene.draw_debug_arrow(pos=torch.tensor([cnt,0,0]), vec=torch.tensor([cnt,1,1]).cpu(), radius=0.01, color=(1.0, 0.0, 1.0, 0.5))
+    scene.draw_debug_sphere(pos=torch.tensor([cnt,0,0]), radius=torch.tensor([cnt,1,1]).sum().cpu(), color=(1.0, 0.0, 1.0, 0.5))
+    cnt += 0.01
+    if cnt>5:
+        cnt = 2
     # print(robot.get_pos())
     # left_knee_pos = left_knee.get_pos()
     # print("left_knee_pos    ",left_knee_pos)
