@@ -140,16 +140,16 @@ scene = gs.Scene(
 #     vis_mode='collision'
 # )
 
-# robot = scene.add_entity(
-#     gs.morphs.URDF(file="assets/urdf/CJ-003/urdf/CJ-003-wheelfoot.urdf",
-#     pos=(0.0, 0.0, 0.7),
-#     quat=(1, 0, 0, 0)
-#     ),
-#     # gs.morphs.MJCF(file="assets/mjcf/point_foot2/point_foot2.xml",
-#     # pos=(0.0, 0.0, 0.65)
-#     # ),
-#     # vis_mode='collision'
-# )
+robot = scene.add_entity(
+    gs.morphs.URDF(file="assets/urdf/CJ-003/urdf/CJ-003-wheelfoot.urdf",
+    pos=(0.0, 0.0, 0.7),
+    quat=(1, 0, 0, 0)
+    ),
+    # gs.morphs.MJCF(file="assets/mjcf/point_foot2/point_foot2.xml",
+    # pos=(0.0, 0.0, 0.65)
+    # ),
+    # vis_mode='collision'
+)
 
 # height_field = cv2.imread("assets/terrain/png/stairs.png", cv2.IMREAD_GRAYSCALE)
 # terrain_height = torch.tensor(height_field) * 0.1
@@ -231,7 +231,8 @@ while True:
     # print(robot.get_pos())
     # left_knee_pos = left_knee.get_pos()
     # print("left_knee_pos    ",left_knee_pos)
-    # force = robot.get_links_net_contact_force()
+    force = robot.get_links_net_contact_force()
+    print(force)
     # dof_vel = robot.get_dofs_velocity()
     # print("dof_pos:",robot.get_dofs_position(dofs_idx))
     # time.sleep(0.1)

@@ -59,8 +59,6 @@ def get_train_cfg(exp_name, max_iterations):
 
 def get_cfgs():
     env_cfg = {
-        "dt":0.01, # control frequency on real robot is 100hz
-        "substeps":5, # PD control substeps
         "num_actions": 8, #总关节数量
         "urdf":"assets/urdf/CJ-003/urdf/CJ-003-wheelfoot.urdf",
         "mjcf":"assets/mjcf/CJ-003/CJ-003-wheelfoot.xml",
@@ -162,8 +160,6 @@ def get_cfgs():
         "clip_actions": 100.0,
         "convexify":True,   #是否启动凸优化网格
         "decimate_aggressiveness": 4,    #优化等级0-8 0：无损 2：原始几何体 5：有明显变化 8： 大变特变
-        "linear_velocity_render": False,  #线速度可视化
-        "angular_velocity_render": False,  #角速度可视化
     }
     obs_cfg = {
         # num_obs = num_slice_obs + history_length * num_slice_obs + num_commands
@@ -188,54 +184,58 @@ def get_cfgs():
     # 名字和奖励函数名一一对应
     reward_cfg = {
         "only_positive_rewards": True,  
-        "tracking_linx_sigma": 0.2, 
+        "tracking_linx_sigma": 0.3, 
         "tracking_liny_sigma": 1.0, 
-        "tracking_ang_sigma": 0.6, 
+        "tracking_ang_sigma": 0.8, 
         # "tracking_height_sigma": 0.005,  
+        "tracking_similar_legged_sigma": 0.05,  
         "tracking_gravity_sigma": 0.1,  
         "feet_distance":[0.3, 0.6], #脚间距范围 m
         "reward_scales": {
-            "tracking_lin_x_vel": 2.0,#1.5
+            "tracking_lin_x_vel": 1.5,#1.5
             "tracking_lin_y_vel": 0.0,
-            "tracking_ang_vel": 1.0, #1.5
-            "tracking_leg_length": -4.0,   #身高/膝关节/髋关节(thigh)/足端到base  高速情况下会产生对抗
-            "lin_vel_z": -0.01, #大了影响高度变换速度 -0.001
-            "joint_action_rate": -0.01,
+            "tracking_ang_vel": 1.5, #1.5
+            "tracking_leg_length": -2.0,   #身高/膝关节/髋关节(thigh)/足端到base  高速情况下会产生对抗
+            "lin_vel_z": -0.2, #大了影响高度变换速度 -0.001
+            "joint_action_rate": -0.1,
             "wheel_action_rate": -0.015, #-0.01
+            # "similar_to_default": 0.0,
             "projected_gravity": -14.0,  #-12
-            "similar_calf": -0.5,
+            "similar_calf": -0.3,
+            # "joint_vel": -0.001,
             "dof_acc": -1e-7,
-            "dof_force": -1e-5,
-            "ang_vel_xy": -0.2,
-            "collision": -0.0015,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
+            "dof_force": -1e-6,
+            "ang_vel_xy": -0.02,
+            "collision": -0.0003,  #base接触地面碰撞力越大越惩罚，数值太大会摆烂
+            # "terrain":0.1,
             "feet_distance": -100.0,
             "survive": 1.0,
-            "tsk": -3.0, #高速对抗
+            "tsk": -2.0, #高速对抗
         },
     }
     command_cfg = {
         "num_commands": 6,
-        "lin_vel_x_range": [-2.0, 2.0], #修改范围要调整奖励权重 低速范围约[-1.0,1.0] 高速约[-2.2, 2.2]
+        "lin_vel_x_range": [-2.0, 2.0], #修改范围要调整奖励权重 低速范围约[-1.0,1.0]
         "lin_vel_y_range": [-0.0, 0.0], 
-        "ang_vel_range": [-12.0, 12.0],   #修改范围要调整奖励权重 低速范围约[-3.14,3.14] 高速约[-12.0, 12.0]
+        "ang_vel_range": [-12.0, 12.0],   #修改范围要调整奖励权重 低速范围约[-3.14,3.14]
         "leg_length_range": [0.0, 1.0],   #两条腿
         "tsk_range": [-0.3, 0.3],   #左右
-        "high_speed": True,    #跟踪高速要开启这个 防止两个速度在高速情况下对抗 高速情况下存活率会变低是正常现象
-        "wheel_radius": 0.1, #轮子半径
-        "wheel_max_speed": 24.0, #轮子最大速度(估计值) rad/s
-        # "inverse_tsk": 3.0,    #std = inverse_tsk / angv 这个数值可以用std=1时估计inverse_tsk 越低在高速情况下越贴近0
-        # "inverse_leg_length": 3.0,   #std = inverse_leg_length / angv 如上同理 越低在高速情况下两腿越相似
-        "zero_stable": False,
+        "high_speed": True,    #跟踪高速要开启这个 大幅削减状态空间
+        "inverse_linx_angv": 1.0,    #前进速度和角速度反比 angv <= inverse_linx_angv / linv_x (desmos函数图像:y=\ \frac{i}{x}\left\{-10<y<10\right\}\left\{-2<x<2\right\})
+        "inverse_tsk": 2.0,    #std = inverse_tsk / angv 这个数值可以用std=1时估计inverse_tsk 越低在高速情况下越贴近0
+        "inverse_leg_length": 2.0,   #std = inverse_leg_length / angv 如上同理 越低在高速情况下两腿越相似
+        "zero_stable": True,
     }
     # 课程学习，奖励循序渐进 待优化
     curriculum_cfg = {
-        "curriculum_lin_vel_step":0.001,   #比例    0.001
-        "curriculum_ang_vel_step":0.00002,   #比例   0.0005
+        "curriculum_step": 25,  #每多少step更新一次课程学习
+        "curriculum_lin_vel_step":0.005,   #比例    0.001
+        "curriculum_ang_vel_step":0.002,   #比例   0.0005
         "curriculum_lin_vel_min_range":0.3,   #比例 
         "curriculum_ang_vel_min_range":0.05,   #比例 
         "err_mode": False, #误差模式 True  动态误差模式 False  要注意在地形情况下速度跟踪肯定和平地差距很大注意误差调整
-        "lin_vel_err_range":[0.35,0.4],  #[0.35,0.5]  课程误差阈值(上升/下降) 误差 or 误差比例(上升/下降)上升阈值会在前期从下降阈值误差下降到设定值
-        "ang_vel_err_range":[0.4,0.7],  #[0.5,1.0]    
+        "lin_vel_err_range":[0.35,0.37,0.5],  #[0.35,0.5] 课程误差阈值(上升/下降) 误差 or 动态误差(上升1/上升2/下降)上升阈值会从1过渡到2
+        "ang_vel_err_range":[0.5,0.53,1.0],  #[0.5,1.0]    
     }
     #域随机化 friction_ratio是范围波动 mass和com是偏移波动 等到模型存活达到70%再开启域随机化
     domain_rand_cfg = { 

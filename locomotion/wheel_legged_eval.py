@@ -29,8 +29,10 @@ def main():
     # env_cfg["simulate_action_latency"] = False
     terrain_cfg["terrain"] = True
     terrain_cfg["eval"] = "agent_eval_gym" #agent_eval_gym/agent_train_gym/circular
-    env_cfg["linear_velocity_render"] = True
-    env_cfg["angular_velocity_render"] = True
+    # env_cfg["kp"] = 40
+    # env_cfg["wheel_action_scale"] = 5
+    # env_cfg["joint_damping"] = 0
+    # env_cfg["wheel_damping"] = 0
     env = WheelLeggedEnv(
         num_envs=1,
         env_cfg=env_cfg,
